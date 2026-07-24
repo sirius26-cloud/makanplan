@@ -58,8 +58,22 @@ export default function RecipesScreen() {
         <View className="p-4 gap-4">
           {/* Header */}
           <View className="gap-2">
-            <Text className="text-2xl font-bold text-foreground">Recipe Library</Text>
-            <Text className="text-sm text-muted">{filteredRecipes.length} recipes</Text>
+            <View className="flex-row items-center justify-between">
+              <View>
+                <Text className="text-2xl font-bold text-foreground">Recipe Library</Text>
+                <Text className="text-sm text-muted">{filteredRecipes.length} recipes</Text>
+              </View>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/add-recipe' as any);
+                }}
+                style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+                className="px-3 py-2 bg-primary rounded-lg"
+              >
+                <Text className="text-white font-bold text-lg">+ Add</Text>
+              </Pressable>
+            </View>
           </View>
 
           {/* Search */}

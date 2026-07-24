@@ -78,20 +78,23 @@ function RecipeCard({ recipe, isScaled }: { recipe: Recipe; isScaled: boolean })
 
       {/* Ingredients */}
       <View className="gap-2 pt-3 border-t border-border">
-        <Text className="text-sm font-bold text-foreground">Ingredients ({recipe.servings} pax)</Text>
-        <FlatList
-          data={recipe.ingredients}
-          keyExtractor={(item, i) => `${i}`}
-          scrollEnabled={false}
-          renderItem={({ item }) => (
-            <Text className="text-base text-foreground leading-relaxed">• {item}</Text>
-          )}
-        />
+        <Text className="text-lg font-bold text-foreground">Ingredients ({recipe.servings} pax)</Text>
+        {recipe.ingredients && recipe.ingredients.length > 0 ? (
+          <View className="gap-2">
+            {recipe.ingredients.map((ingredient, index) => (
+              <Text key={index} className="text-base text-foreground leading-relaxed">
+                • {ingredient}
+              </Text>
+            ))}
+          </View>
+        ) : (
+          <Text className="text-base text-muted">No ingredients listed</Text>
+        )}
       </View>
 
       {/* Instructions */}
       <View className="gap-2 pt-3 border-t border-border">
-        <Text className="text-sm font-bold text-foreground">Instructions</Text>
+        <Text className="text-lg font-bold text-foreground">Instructions</Text>
         <Text className="text-base text-foreground leading-relaxed">
           {recipe.instructions}
         </Text>
@@ -169,7 +172,7 @@ export default function DayDetailScreen() {
 
           {/* Serving Size Selector */}
           <View className="gap-3 p-4 bg-surface rounded-lg border border-border">
-            <Text className="text-sm font-bold text-foreground">Adjust Recipe for:</Text>
+            <Text className="text-lg font-bold text-foreground">Adjust Recipe for:</Text>
             <View className="flex-row gap-2 flex-wrap">
               {servingSizes.map((size) => (
                 <Pressable
