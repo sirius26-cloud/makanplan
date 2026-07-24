@@ -90,6 +90,12 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="oauth/callback" />
+            <Stack.Screen name="add-recipe" />
+            <Stack.Screen name="import-recipe" />
+            <Stack.Screen name="recipe-detail" />
+            <Stack.Screen name="weekly-generator" />
+            <Stack.Screen name="day-detail" />
+            <Stack.Screen name="grocery-list" />
           </Stack>
           <StatusBar style="auto" />
           </QueryClientProvider>
