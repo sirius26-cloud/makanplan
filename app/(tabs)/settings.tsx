@@ -218,16 +218,16 @@ export default function SettingsScreen() {
                     onPress={() => handleTogglePantryStaple(staple.id)}
                     className="flex-1"
                   >
-                    <Text className={`text-base ${staple.isActive ? 'text-foreground font-semibold' : 'text-muted line-through'}`}>
-                      {staple.name}
+                    <Text className={`text-base font-semibold ${staple.isActive ? 'text-foreground' : 'text-muted line-through'}`}>
+                      {staple.isActive ? '✓' : '○'} {staple.name}
                     </Text>
                   </Pressable>
                   <Pressable
                     onPress={() => handleRemovePantryStaple(staple.id)}
                     style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.95 : 1 }] }]}
-                    className="px-3 py-1 bg-error rounded"
+                    className="px-2 py-1 bg-error rounded"
                   >
-                    <Text className="text-white font-bold text-sm">Remove</Text>
+                    <Text className="text-white font-bold text-sm">×</Text>
                   </Pressable>
                 </View>
               ))}
