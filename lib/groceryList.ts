@@ -1,13 +1,50 @@
 import { Recipe, WeeklyPlan, GroceryItem, PantryStaple } from './types';
 
 /**
+ * Extract pure ingredient from text that may contain preparation steps
+ * Removes common preparation descriptors and instructions
+ */
+function extractPureIngredient(ingredient: string): string {
+  let cleaned = ingredient
+    .toLowerCase()
+    .trim()
+    // Remove preparation methods
+    .replace(/\b(chopped|sliced|diced|minced|grated|peeled|halved|whole|fresh|dried|ground|powdered|crushed|finely|coarsely|blanched|roasted|grilled|fried|boiled|steamed|sautéed|pan-fried|deep-fried|shallow-fried|stir-fried|braised|stewed|simmered|baked|toasted|marinated|seasoned|coated|mixed|blended|pureed|mashed|shredded|julienned|brunoise|chiffonade)\b/gi, '')
+    // Remove common instruction phrases
+    .replace(/\b(add|mix|combine|stir|fold|whisk|beat|blend|process|heat|cook|bake|fry|boil|steam|roast|grill|simmer|braise|stew|sauté|season|taste|adjust|serve|garnish|top|sprinkle|drizzle|pour|spread|layer|arrange|place|set aside|keep|store|refrigerate|freeze|thaw|let|allow|until|when|if|as|then|before|after|while|during)\b/gi, '')
+    // Remove common quantity descriptors
+    .replace(/\b(tbsp|tsp|cup|cups|oz|lb|lbs|g|kg|ml|l|pinch|dash|splash|handful|piece|pieces|slice|slices|stalk|stalks|clove|cloves|head|heads|bunch|bunches|can|cans|jar|jars|bottle|bottles|package|packages|pkt|pkts|approx|approximately|about|roughly|around|or so)\b/gi, '')
+    // Remove numbers and measurements
+    .replace(/\d+[\d.\/]*\s*-?\s*\d*\s*/g, '')
+    // Remove parenthetical content (often contains instructions)
+    .replace(/\([^)]*\)/g, '')
+    // Remove special characters and extra whitespace
+    .replace(/[&,;:]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // If result is empty or too short, return original cleaned version
+  if (cleaned.length < 2) {
+    return ingredient
+      .toLowerCase()
+      .trim()
+      .replace(/\d+[\d.\/]*\s*-?\s*\d*\s*/g, '')
+      .replace(/\([^)]*\)/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  return cleaned;
+}
+
+/**
  * Normalize ingredient name by removing prep descriptors
  */
 function normalizeIngredient(ingredient: string): string {
-  return ingredient
+  const pure = extractPureIngredient(ingredient);
+  return pure
     .toLowerCase()
     .trim()
-    .replace(/\b(chopped|sliced|diced|minced|grated|peeled|halved|whole|fresh|dried|ground|powdered|crushed|finely|coarsely)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -19,7 +56,7 @@ function categorizeIngredient(ingredient: string): 'Protein' | 'Veg' | 'Pantry' 
   const normalized = normalizeIngredient(ingredient).toLowerCase();
 
   // Protein keywords
-  const proteinKeywords = ['chicken', 'fish', 'beef', 'shrimp', 'seafood', 'tofu', 'pork', 'duck', 'scallops', 'crab'];
+  const proteinKeywords = ['chicken', 'fish', 'beef', 'shrimp', 'seafood', 'tofu', 'pork', 'duck', 'scallops', 'crab', 'salmon', 'tuna', 'cod', 'halibut', 'prawn'];
   if (proteinKeywords.some((kw) => normalized.includes(kw))) return 'Protein';
 
   // Vegetable keywords
@@ -43,8 +80,17 @@ function categorizeIngredient(ingredient: string): 'Protein' | 'Veg' | 'Pantry' 
     'garlic',
     'ginger',
     'scallion',
+    'green onion',
     'napa',
     'bamboo',
+    'celery',
+    'zucchini',
+    'eggplant',
+    'asparagus',
+    'broccoli rabe',
+    'kale',
+    'arugula',
+    'watercress',
   ];
   if (vegKeywords.some((kw) => normalized.includes(kw))) return 'Veg';
 
@@ -68,8 +114,21 @@ function categorizeIngredient(ingredient: string): 'Protein' | 'Veg' | 'Pantry' 
     'sesame',
     'vinegar',
     'starch',
+    'cornstarch',
     'flour',
     'butter',
+    'wine',
+    'cooking wine',
+    'shaoxing',
+    'huatiao',
+    'lemongrass',
+    'chilli',
+    'lime',
+    'lemon',
+    'honey',
+    'soy',
+    'miso',
+    'ponzu',
   ];
   if (pantryKeywords.some((kw) => normalized.includes(kw))) return 'Pantry';
 
@@ -97,6 +156,9 @@ export function generateGroceryList(
     for (const ingredient of mealDay.main.ingredients) {
       const normalized = normalizeIngredient(ingredient);
 
+      // Skip empty ingredients or very short strings (likely noise)
+      if (!normalized || normalized.length < 2) continue;
+
       // Skip if in pantry staples
       if (activePantryNames.has(normalized)) continue;
 
@@ -109,6 +171,9 @@ export function generateGroceryList(
     if (mealDay.vegSide) {
       for (const ingredient of mealDay.vegSide.ingredients) {
         const normalized = normalizeIngredient(ingredient);
+
+        // Skip empty ingredients or very short strings
+        if (!normalized || normalized.length < 2) continue;
 
         // Skip if in pantry staples
         if (activePantryNames.has(normalized)) continue;
