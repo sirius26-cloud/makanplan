@@ -3,15 +3,17 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useState, useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
-import { exportRecipesAsJSON } from '@/lib/recipeBackup';
+import { exportRecipesAsJSON, importRecipesFromJSON } from '@/lib/recipeBackup';
 import { getCloudBackupConfig, disconnectCloudBackup } from '@/lib/cloudBackup';
+import * as DocumentPicker from 'expo-document-picker';
 
 export default function SettingsScreen() {
-  const { settings, updateSettings, recipes } = useRecipes();
+  const { settings, updateSettings, recipes, addRecipe } = useRecipes();
   const [defaultServings, setDefaultServings] = useState(settings.defaultServings);
   const [pantryStaples, setPantryStaples] = useState(settings.pantryStaples);
   const [newStapleName, setNewStapleName] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [cloudConfig, setCloudConfig] = useState<any>(null);
 
   useEffect(() => {
@@ -75,6 +77,50 @@ export default function SettingsScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleImportRecipes = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setIsImporting(true);
+
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+      });
+
+      if (result && 'uri' in result) {
+        // Read file content
+        const fileUri = result.uri as string;
+        const response = await fetch(fileUri);
+        const fileContent = await response.text();
+        
+        // Import recipes
+        const importedRecipes = await importRecipesFromJSON(fileContent);
+
+        // Add each imported recipe
+        let addedCount = 0;
+        for (const recipe of importedRecipes) {
+          try {
+            await addRecipe(recipe);
+            addedCount++;
+          } catch (err) {
+            console.error(`Failed to add recipe ${recipe.name}:`, err);
+          }
+        }
+
+        Alert.alert(
+          'Import Successful',
+          `Imported ${addedCount} recipes. They have been added to your library.`,
+        );
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      console.error('Import failed:', error);
+      Alert.alert('Import Failed', 'Could not import recipes. Please check the file format.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -209,6 +255,27 @@ export default function SettingsScreen() {
                   <ActivityIndicator size="small" color="white" />
                 ) : (
                   <Text className="font-bold text-white">📥 Export All Recipes as JSON</Text>
+                )}
+              </Pressable>
+            </View>
+
+            {/* Local JSON Import */}
+            <View className="gap-2 pt-3 border-t border-border">
+              <Text className="text-base font-semibold text-foreground">Option 1b: Import JSON</Text>
+              <Text className="text-sm text-muted">Upload a JSON backup file to add recipes to your library.</Text>
+              <Pressable
+                onPress={handleImportRecipes}
+                disabled={isImporting}
+                style={({ pressed }) => [
+                  { transform: [{ scale: pressed && !isImporting ? 0.97 : 1 }] },
+                  { opacity: pressed && !isImporting ? 0.8 : 1 },
+                ]}
+                className="p-3 bg-primary rounded-lg items-center"
+              >
+                {isImporting ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="font-bold text-white">📤 Import Recipes from JSON</Text>
                 )}
               </Pressable>
             </View>
