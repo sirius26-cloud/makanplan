@@ -1,10 +1,11 @@
 import { ScrollView, Text, View, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useState, useEffect } from 'react';
 import { Recipe, RecipeType, ProteinType } from '@/lib/types';
 import * as Haptics from 'expo-haptics';
+import { ParsedRecipe } from '@/lib/recipeImport';
 
 const RECIPE_TYPES: RecipeType[] = ['protein_main', 'veg_side', 'rice_noodle_one_pot'];
 const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu'];
@@ -14,6 +15,7 @@ const SPICE_LEVELS = ['light', 'light-medium', 'medium'] as const;
 export default function AddRecipeScreen() {
   const { addRecipe } = useRecipes();
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [isSaving, setIsSaving] = useState(false);
 
   // Form state
@@ -29,6 +31,32 @@ export default function AddRecipeScreen() {
   const [spiceLevel, setSpiceLevel] = useState<typeof SPICE_LEVELS[number]>('light');
   const [isFavourite, setIsFavourite] = useState(false);
   const [isStaple, setIsStaple] = useState(false);
+
+  // Load imported recipe if provided
+  useEffect(() => {
+    if (params.importedRecipe) {
+      try {
+        const imported: ParsedRecipe = JSON.parse(params.importedRecipe as string);
+        if (imported.name) setName(imported.name);
+        if (imported.type) setType(imported.type);
+        if (imported.protein) setProtein(imported.protein);
+        if (imported.ingredients && imported.ingredients.length > 0) {
+          setIngredients(imported.ingredients.join('\n'));
+        }
+        if (imported.instructions) setInstructions(imported.instructions);
+        if (imported.servings) setServings(imported.servings.toString());
+        if (imported.cuisineType && imported.cuisineType !== 'Mixed') {
+          setCuisine(imported.cuisineType as typeof CUISINES[number]);
+        }
+        if (imported.spiceLevel) {
+          setSpiceLevel(imported.spiceLevel as typeof SPICE_LEVELS[number]);
+        }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (error) {
+        console.error('Failed to load imported recipe:', error);
+      }
+    }
+  }, [params.importedRecipe]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -90,6 +118,18 @@ export default function AddRecipeScreen() {
             <Text className="text-3xl font-bold text-foreground">Add New Recipe</Text>
             <Text className="text-base text-muted">Create a custom recipe for your meal plans</Text>
           </View>
+
+          {/* Import Button */}
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/import-recipe' as any);
+            }}
+            style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+            className="p-3 bg-surface border-2 border-primary rounded-lg items-center"
+          >
+            <Text className="text-primary font-bold text-base">📥 Import from URL or Text</Text>
+          </Pressable>
 
           {/* Recipe Name */}
           <View className="gap-2">
