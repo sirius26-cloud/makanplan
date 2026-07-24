@@ -21,6 +21,9 @@ function extractPureIngredient(ingredient: string): string {
     // Remove special characters and extra whitespace
     .replace(/[&,;:]/g, '')
     .replace(/\s+/g, ' ')
+    .trim()
+    // Remove stray single letters at start (artifacts from quantity removal like 'g' from grams)
+    .replace(/^[a-z]\s+/i, '')
     .trim();
 
   // If result is empty or too short, return original cleaned version
