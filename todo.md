@@ -49,3 +49,11 @@
 - [x] Add recipe scaling feature (adjust ingredients by pax)
 - [x] Implement dish rotation/swap functionality
 - [x] Create local setup guide and deployment instructions
+
+
+## Phase 8: Grocery List Export Feature
+- [x] Create export utility to format grocery list as text
+- [x] Implement system share sheet for Notes/email/messaging
+- [x] Add export buttons to grocery list screen
+- [x] Test export on iOS and Android
+- [x] Create checkpoint and deliver
