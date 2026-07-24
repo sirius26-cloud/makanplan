@@ -134,7 +134,7 @@ export default function DayDetailScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setIsShuffling(true);
 
-      const newMealDay = regenerateMealDay(recipes, weeklyPlan, index, weeklyPlan.proteinFilter);
+      const newMealDay = regenerateMealDay(recipes, weeklyPlan, index, weeklyPlan.proteinFilters);
       const updatedPlan = {
         ...weeklyPlan,
         days: weeklyPlan.days.map((d, i) => (i === index ? newMealDay : d)),

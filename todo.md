@@ -57,3 +57,10 @@
 - [x] Add export buttons to grocery list screen
 - [x] Test export on iOS and Android
 - [x] Create checkpoint and deliver
+
+
+## Phase 9: Bug Fixes
+- [x] Fix rotation backend error (investigate meal generator)
+- [x] Fix missing ingredient portions in recipe scaling display
+- [x] Replace 'Mixed' protein with multiple protein selection UI
+- [x] Test all fixes and create checkpoint

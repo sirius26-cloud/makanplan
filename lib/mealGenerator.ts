@@ -35,12 +35,12 @@ export function generateWeeklyPlan(
   recipes: Recipe[],
   peopleCount: number,
   numDays: number,
-  proteinFilter?: ProteinType,
+  proteinFilters?: ProteinType[],
   includeRiceDays: boolean = false,
 ): WeeklyPlan {
-  // Filter recipes by protein if specified
-  const availableRecipes = proteinFilter
-    ? recipes.filter((r) => r.protein === proteinFilter || r.protein === 'mixed')
+  // Filter recipes by proteins if specified
+  const availableRecipes = proteinFilters && proteinFilters.length > 0
+    ? recipes.filter((r) => proteinFilters.includes(r.protein))
     : recipes;
 
   // Separate by type
@@ -48,7 +48,7 @@ export function generateWeeklyPlan(
   const riceNoodleMains = availableRecipes.filter((r) => r.type === 'rice_noodle_one_pot');
   const vegSides = availableRecipes.filter((r) => r.type === 'veg_side');
 
-  if (mains.length === 0) throw new Error('No protein mains available');
+  if (mains.length === 0) throw new Error('No protein mains available with selected filters');
   if (vegSides.length === 0) throw new Error('No veg sides available');
 
   const days: MealDay[] = [];
@@ -101,7 +101,7 @@ export function generateWeeklyPlan(
     createdAt: Date.now(),
     peopleCount,
     days,
-    proteinFilter,
+    proteinFilters,
     includeRiceDays,
   };
 }
@@ -113,17 +113,17 @@ export function regenerateMealDay(
   recipes: Recipe[],
   currentPlan: WeeklyPlan,
   dayIndex: number,
-  proteinFilter?: ProteinType,
+  proteinFilters?: ProteinType[],
 ): MealDay {
-  const availableRecipes = proteinFilter
-    ? recipes.filter((r) => r.protein === proteinFilter || r.protein === 'mixed')
+  const availableRecipes = proteinFilters && proteinFilters.length > 0
+    ? recipes.filter((r) => proteinFilters.includes(r.protein))
     : recipes;
 
   const mains = availableRecipes.filter((r) => r.type === 'protein_main');
   const riceNoodleMains = availableRecipes.filter((r) => r.type === 'rice_noodle_one_pot');
   const vegSides = availableRecipes.filter((r) => r.type === 'veg_side');
 
-  if (mains.length === 0) throw new Error('No protein mains available');
+  if (mains.length === 0) throw new Error('No protein mains available with selected filters');
 
   // Avoid picking the same main as the current day
   const currentMain = currentPlan.days[dayIndex]?.main;

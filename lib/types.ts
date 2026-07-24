@@ -3,7 +3,7 @@
  */
 
 export type RecipeType = 'protein_main' | 'veg_side' | 'rice_noodle_one_pot';
-export type ProteinType = 'chicken' | 'fish' | 'beef' | 'seafood' | 'tofu' | 'mixed';
+export type ProteinType = 'chicken' | 'fish' | 'beef' | 'seafood' | 'tofu';
 
 export interface Recipe {
   id: string;
@@ -14,7 +14,7 @@ export interface Recipe {
   isRice: boolean; // Rice-based one-pot (vs noodle/soup)
   isFavourite: boolean;
   isStaple: boolean;
-  ingredients: string[]; // Ingredient names (no quantities)
+  ingredients: string[]; // Ingredient names with quantities
   instructions: string;
   servings: number; // Default servings
   cuisineType: 'Japanese' | 'Thai' | 'Cantonese' | 'Vietnamese' | 'Western' | 'Mixed';
@@ -33,7 +33,7 @@ export interface WeeklyPlan {
   createdAt: number;
   peopleCount: number;
   days: MealDay[];
-  proteinFilter?: ProteinType; // Filter used to generate this plan
+  proteinFilters?: ProteinType[]; // Multiple protein filters
   includeRiceDays: boolean;
 }
 

@@ -6,7 +6,7 @@ import { useState, useMemo } from 'react';
 import { ProteinType, RecipeType } from '@/lib/types';
 import * as Haptics from 'expo-haptics';
 
-const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu', 'mixed'];
+const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu'];
 const RECIPE_TYPES: RecipeType[] = ['protein_main', 'veg_side', 'rice_noodle_one_pot'];
 
 export default function RecipesScreen() {

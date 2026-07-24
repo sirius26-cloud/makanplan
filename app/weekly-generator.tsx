@@ -7,23 +7,37 @@ import { generateWeeklyPlan } from '@/lib/mealGenerator';
 import { ProteinType } from '@/lib/types';
 import * as Haptics from 'expo-haptics';
 
-const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu', 'mixed'];
+const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu'];
 
 export default function WeeklyGeneratorScreen() {
   const { recipes, setWeeklyPlan } = useRecipes();
   const router = useRouter();
   const [peopleCount, setPeopleCount] = useState(4);
   const [numDays, setNumDays] = useState(5);
-  const [proteinFilter, setProteinFilter] = useState<ProteinType | undefined>(undefined);
+  const [selectedProteins, setSelectedProteins] = useState<ProteinType[]>([]);
   const [includeRiceDays, setIncludeRiceDays] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleToggleProtein = (protein: ProteinType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedProteins((prev) => {
+      if (prev.includes(protein)) {
+        return prev.filter((p) => p !== protein);
+      } else {
+        return [...prev, protein];
+      }
+    });
+  };
 
   const handleGeneratePlan = async () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setIsGenerating(true);
 
-      const plan = generateWeeklyPlan(recipes, peopleCount, numDays, proteinFilter, includeRiceDays);
+      // If no proteins selected, use all (undefined)
+      const proteinFilters = selectedProteins.length > 0 ? selectedProteins : undefined;
+
+      const plan = generateWeeklyPlan(recipes, peopleCount, numDays, proteinFilters, includeRiceDays);
       await setWeeklyPlan(plan);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -48,14 +62,14 @@ export default function WeeklyGeneratorScreen() {
           {/* Header */}
           <View className="gap-2">
             <Pressable onPress={handleBack} className="mb-2">
-              <Text className="text-lg text-primary font-semibold">← Back</Text>
+              <Text className="text-lg text-primary font-bold">← Back</Text>
             </Pressable>
-            <Text className="text-2xl font-bold text-foreground">Generate Weekly Plan</Text>
+            <Text className="text-3xl font-bold text-foreground">Generate Weekly Plan</Text>
           </View>
 
           {/* People Count */}
           <View className="gap-3">
-            <Text className="text-sm font-semibold text-foreground">People Count</Text>
+            <Text className="text-lg font-bold text-foreground">People Count</Text>
             <View className="flex-row gap-2">
               {[1, 2, 3, 4].map((count) => (
                 <Pressable
@@ -72,7 +86,7 @@ export default function WeeklyGeneratorScreen() {
                   }`}
                 >
                   <Text
-                    className={`font-semibold ${
+                    className={`font-bold text-base ${
                       peopleCount === count ? 'text-white' : 'text-foreground'
                     }`}
                   >
@@ -85,7 +99,7 @@ export default function WeeklyGeneratorScreen() {
 
           {/* Number of Days */}
           <View className="gap-3">
-            <Text className="text-sm font-semibold text-foreground">Number of Days</Text>
+            <Text className="text-lg font-bold text-foreground">Number of Days</Text>
             <View className="flex-row gap-2">
               {[5, 6, 7].map((days) => (
                 <Pressable
@@ -102,7 +116,7 @@ export default function WeeklyGeneratorScreen() {
                   }`}
                 >
                   <Text
-                    className={`font-semibold ${
+                    className={`font-bold text-base ${
                       numDays === days ? 'text-white' : 'text-foreground'
                     }`}
                   >
@@ -113,47 +127,29 @@ export default function WeeklyGeneratorScreen() {
             </View>
           </View>
 
-          {/* Protein Filter */}
+          {/* Protein Preferences */}
           <View className="gap-3">
-            <Text className="text-sm font-semibold text-foreground">Protein Preference (Optional)</Text>
+            <Text className="text-lg font-bold text-foreground">Protein Preferences (Optional)</Text>
+            <Text className="text-sm text-muted">Select one or more proteins. Leave blank for all.</Text>
             <View className="flex-row flex-wrap gap-2">
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setProteinFilter(undefined);
-                }}
-                style={({ pressed }) => [
-                  { transform: [{ scale: pressed ? 0.95 : 1 }] },
-                ]}
-                className={`px-4 py-2 rounded-full ${
-                  proteinFilter === undefined ? 'bg-primary' : 'bg-surface border border-border'
-                }`}
-              >
-                <Text
-                  className={`text-sm font-semibold ${
-                    proteinFilter === undefined ? 'text-white' : 'text-foreground'
-                  }`}
-                >
-                  All
-                </Text>
-              </Pressable>
               {PROTEIN_OPTIONS.map((protein) => (
                 <Pressable
                   key={protein}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setProteinFilter(protein);
-                  }}
+                  onPress={() => handleToggleProtein(protein)}
                   style={({ pressed }) => [
                     { transform: [{ scale: pressed ? 0.95 : 1 }] },
                   ]}
                   className={`px-4 py-2 rounded-full ${
-                    proteinFilter === protein ? 'bg-primary' : 'bg-surface border border-border'
+                    selectedProteins.includes(protein)
+                      ? 'bg-primary'
+                      : 'bg-surface border border-border'
                   }`}
                 >
                   <Text
-                    className={`text-sm font-semibold capitalize ${
-                      proteinFilter === protein ? 'text-white' : 'text-foreground'
+                    className={`text-base font-bold capitalize ${
+                      selectedProteins.includes(protein)
+                        ? 'text-white'
+                        : 'text-foreground'
                     }`}
                   >
                     {protein}
@@ -166,7 +162,7 @@ export default function WeeklyGeneratorScreen() {
           {/* Include Rice Days */}
           <View className="gap-3">
             <View className="flex-row items-center justify-between">
-              <Text className="text-sm font-semibold text-foreground">Include Rice/Noodle Days</Text>
+              <Text className="text-lg font-bold text-foreground">Include Rice/Noodle Days</Text>
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -179,7 +175,7 @@ export default function WeeklyGeneratorScreen() {
                   includeRiceDays ? 'bg-primary' : 'bg-surface border border-border'
                 }`}
               >
-                <Text className={`font-semibold ${includeRiceDays ? 'text-white' : 'text-foreground'}`}>
+                <Text className={`font-bold text-base ${includeRiceDays ? 'text-white' : 'text-foreground'}`}>
                   {includeRiceDays ? 'Yes' : 'No'}
                 </Text>
               </Pressable>
@@ -199,7 +195,7 @@ export default function WeeklyGeneratorScreen() {
             {isGenerating ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text className="font-semibold text-white text-base">Generate Plan</Text>
+              <Text className="font-bold text-white text-lg">Generate Plan</Text>
             )}
           </Pressable>
         </View>
