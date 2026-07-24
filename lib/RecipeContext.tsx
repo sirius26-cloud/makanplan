@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Recipe, WeeklyPlan, AppSettings } from './types';
 import { loadRecipes, saveRecipes, loadWeeklyPlan, saveWeeklyPlan, loadSettings, saveSettings } from './storage';
 import { SEED_RECIPES } from './seedRecipes';
+import { FAMILY_FAVOURITE_RECIPES, SIMILAR_DISHES } from './familyFavourites';
 
 interface RecipeContextType {
   recipes: Recipe[];
@@ -15,6 +16,7 @@ interface RecipeContextType {
   deleteRecipe: (id: string) => Promise<void>;
   toggleFavourite: (id: string) => Promise<void>;
   toggleStaple: (id: string) => Promise<void>;
+  getSimilarDishes: (recipeId: string) => Recipe[];
 
   // Weekly plan operations
   setWeeklyPlan: (plan: WeeklyPlan | null) => Promise<void>;
@@ -48,12 +50,17 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
         loadSettings(),
       ]);
 
-      // If no recipes, seed with defaults
+      // If no recipes, seed with defaults (family favourites + general recipes)
       if (loadedRecipes.length === 0) {
-        await saveRecipes(SEED_RECIPES);
-        setRecipes(SEED_RECIPES);
+        const allRecipes = [...FAMILY_FAVOURITE_RECIPES, ...SEED_RECIPES];
+        await saveRecipes(allRecipes);
+        setRecipes(allRecipes);
       } else {
-        setRecipes(loadedRecipes);
+        // Merge any new family favourites with existing recipes
+        const existingIds = new Set(loadedRecipes.map((r) => r.id));
+        const newFavourites = FAMILY_FAVOURITE_RECIPES.filter((r) => !existingIds.has(r.id));
+        const mergedRecipes = [...newFavourites, ...loadedRecipes];
+        setRecipes(mergedRecipes);
       }
 
       setWeeklyPlanState(loadedPlan);
@@ -97,6 +104,11 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  function getSimilarDishes(recipeId: string): Recipe[] {
+    const similarIds = SIMILAR_DISHES[recipeId] || [];
+    return recipes.filter((r) => similarIds.includes(r.id));
+  }
+
   async function setWeeklyPlan(plan: WeeklyPlan | null) {
     setWeeklyPlanState(plan);
     if (plan) {
@@ -123,6 +135,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     deleteRecipe,
     toggleFavourite,
     toggleStaple,
+    getSimilarDishes,
     setWeeklyPlan,
     updateSettings,
     reload,

@@ -1,27 +1,133 @@
-import { ScrollView, Text, View, Pressable, ActivityIndicator } from 'react-native';
+import { ScrollView, Text, View, Pressable, ActivityIndicator, FlatList } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { regenerateMealDay } from '@/lib/mealGenerator';
+import { scaleRecipe, getServingSizes } from '@/lib/recipeScaling';
+import { Recipe } from '@/lib/types';
 import * as Haptics from 'expo-haptics';
 
+const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  protein_main: { bg: '#FFE5D9', text: '#E85D2A', border: '#E85D2A' },
+  veg_side: { bg: '#D4E8D4', text: '#2D5016', border: '#2D5016' },
+  rice_noodle_one_pot: { bg: '#FFF4D9', text: '#F39C12', border: '#F39C12' },
+};
+
+function getCategoryColor(type: string) {
+  return CATEGORY_COLORS[type] || { bg: '#F5F5F5', text: '#7F8C8D', border: '#E5E5E5' };
+}
+
+function RecipeCard({ recipe, isScaled }: { recipe: Recipe; isScaled: boolean }) {
+  const color = getCategoryColor(recipe.type);
+
+  return (
+    <View className="gap-3 p-4 bg-surface rounded-lg border border-border">
+      {/* Recipe Header */}
+      <View
+        className="p-3 rounded-lg border-2 gap-2"
+        style={{
+          backgroundColor: color.bg,
+          borderColor: color.border,
+        }}
+      >
+        <Text className="text-xs font-bold" style={{ color: color.text }}>
+          {recipe.type === 'protein_main'
+            ? 'MAIN'
+            : recipe.type === 'veg_side'
+              ? 'VEG SIDE'
+              : 'RICE/NOODLE'}
+        </Text>
+        <Text className="text-2xl font-bold" style={{ color: color.text }}>
+          {recipe.name}
+        </Text>
+      </View>
+
+      {/* Recipe Info */}
+      <View className="gap-2">
+        <View className="flex-row gap-2 flex-wrap">
+          <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+            {recipe.cuisineType}
+          </Text>
+          <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded capitalize">
+            {recipe.protein}
+          </Text>
+          <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+            {recipe.spiceLevel}
+          </Text>
+        </View>
+
+        <View className="flex-row gap-2 mt-1">
+          {recipe.hasVeg && (
+            <Text className="text-xs bg-success/20 text-success px-2 py-1 rounded font-semibold">
+              Has Veg
+            </Text>
+          )}
+          {recipe.isRice && (
+            <Text className="text-xs bg-warning/20 text-warning px-2 py-1 rounded font-semibold">
+              Rice-based
+            </Text>
+          )}
+          {isScaled && (
+            <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded font-semibold">
+              Scaled
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {/* Ingredients */}
+      <View className="gap-2 pt-3 border-t border-border">
+        <Text className="text-sm font-bold text-foreground">Ingredients ({recipe.servings} pax)</Text>
+        <FlatList
+          data={recipe.ingredients}
+          keyExtractor={(item, i) => `${i}`}
+          scrollEnabled={false}
+          renderItem={({ item }) => (
+            <Text className="text-base text-foreground leading-relaxed">• {item}</Text>
+          )}
+        />
+      </View>
+
+      {/* Instructions */}
+      <View className="gap-2 pt-3 border-t border-border">
+        <Text className="text-sm font-bold text-foreground">Instructions</Text>
+        <Text className="text-base text-foreground leading-relaxed">
+          {recipe.instructions}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function DayDetailScreen() {
-  const { weeklyPlan, setWeeklyPlan, recipes } = useRecipes();
+  const { weeklyPlan, setWeeklyPlan, recipes, settings } = useRecipes();
   const { dayIndex } = useLocalSearchParams();
   const router = useRouter();
   const [isShuffling, setIsShuffling] = useState(false);
+  const [scaledServings, setScaledServings] = useState(settings.defaultServings);
+  const [scaledMain, setScaledMain] = useState<Recipe | null>(null);
+  const [scaledVeg, setScaledVeg] = useState<Recipe | null>(null);
 
   const index = parseInt(dayIndex as string, 10);
   const day = weeklyPlan?.days[index];
 
+  useEffect(() => {
+    if (day) {
+      setScaledMain(scaleRecipe(day.main, scaledServings));
+      setScaledVeg(day.vegSide ? scaleRecipe(day.vegSide, scaledServings) : null);
+    }
+  }, [day, scaledServings]);
+
   if (!day || !weeklyPlan) {
     return (
       <ScreenContainer className="flex-1 items-center justify-center">
-        <Text className="text-foreground">Day not found</Text>
+        <Text className="text-foreground text-lg">Day not found</Text>
       </ScreenContainer>
     );
   }
+
+  const servingSizes = getServingSizes(day.main.servings);
 
   const handleShuffle = async () => {
     try {
@@ -56,90 +162,67 @@ export default function DayDetailScreen() {
           {/* Header */}
           <View className="gap-2">
             <Pressable onPress={handleBack} className="mb-2">
-              <Text className="text-lg text-primary font-semibold">← Back</Text>
+              <Text className="text-lg text-primary font-bold">← Back</Text>
             </Pressable>
-            <Text className="text-2xl font-bold text-foreground">Day {day.day}</Text>
+            <Text className="text-3xl font-bold text-foreground">Day {day.day}</Text>
+          </View>
+
+          {/* Serving Size Selector */}
+          <View className="gap-3 p-4 bg-surface rounded-lg border border-border">
+            <Text className="text-sm font-bold text-foreground">Adjust Recipe for:</Text>
+            <View className="flex-row gap-2 flex-wrap">
+              {servingSizes.map((size) => (
+                <Pressable
+                  key={size}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setScaledServings(size);
+                  }}
+                  style={({ pressed }) => [
+                    { transform: [{ scale: pressed ? 0.95 : 1 }] },
+                  ]}
+                  className={`px-4 py-2 rounded-full border-2 ${
+                    scaledServings === size
+                      ? 'bg-primary border-primary'
+                      : 'bg-background border-border'
+                  }`}
+                >
+                  <Text
+                    className={`font-bold text-base ${
+                      scaledServings === size ? 'text-white' : 'text-foreground'
+                    }`}
+                  >
+                    {size} pax
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
 
           {/* Main Dish */}
-          <View className="gap-3 p-4 bg-surface rounded-lg border border-border">
-            <Text className="text-sm font-semibold text-muted">Main Dish</Text>
-            <Text className="text-2xl font-bold text-foreground">{day.main.name}</Text>
-
-            <View className="gap-2 mt-2 pt-3 border-t border-border">
-              <View className="flex-row gap-2">
-                <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
-                  {day.main.cuisineType}
-                </Text>
-                <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded capitalize">
-                  {day.main.protein}
-                </Text>
-              </View>
-
-              <Text className="text-sm text-muted mt-2">Spice Level: {day.main.spiceLevel}</Text>
-
-              <View className="mt-3">
-                <Text className="text-xs font-semibold text-muted mb-2">Ingredients:</Text>
-                {day.main.ingredients.map((ingredient, i) => (
-                  <Text key={i} className="text-sm text-foreground">
-                    • {ingredient}
-                  </Text>
-                ))}
-              </View>
-
-              <View className="mt-3">
-                <Text className="text-xs font-semibold text-muted mb-2">Instructions:</Text>
-                <Text className="text-sm text-foreground leading-relaxed">
-                  {day.main.instructions}
-                </Text>
-              </View>
-            </View>
-          </View>
+          {scaledMain && <RecipeCard recipe={scaledMain} isScaled={scaledServings !== day.main.servings} />}
 
           {/* Veg Side */}
-          {day.vegSide && (
-            <View className="gap-3 p-4 bg-surface rounded-lg border border-border">
-              <Text className="text-sm font-semibold text-muted">Vegetable Side</Text>
-              <Text className="text-2xl font-bold text-foreground">{day.vegSide.name}</Text>
+          {scaledVeg && <RecipeCard recipe={scaledVeg} isScaled={scaledServings !== day.vegSide!.servings} />}
 
-              <View className="gap-2 mt-2 pt-3 border-t border-border">
-                <Text className="text-sm text-muted">Cuisine: {day.vegSide.cuisineType}</Text>
-
-                <View className="mt-3">
-                  <Text className="text-xs font-semibold text-muted mb-2">Ingredients:</Text>
-                  {day.vegSide.ingredients.map((ingredient, i) => (
-                    <Text key={i} className="text-sm text-foreground">
-                      • {ingredient}
-                    </Text>
-                  ))}
-                </View>
-
-                <View className="mt-3">
-                  <Text className="text-xs font-semibold text-muted mb-2">Instructions:</Text>
-                  <Text className="text-sm text-foreground leading-relaxed">
-                    {day.vegSide.instructions}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )}
-
-          {/* Shuffle Button */}
-          <Pressable
-            onPress={handleShuffle}
-            disabled={isShuffling}
-            style={({ pressed }) => [
-              { transform: [{ scale: pressed && !isShuffling ? 0.97 : 1 }] },
-              { opacity: pressed && !isShuffling ? 0.8 : 1 },
-            ]}
-            className="p-4 bg-primary rounded-lg items-center"
-          >
-            {isShuffling ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <Text className="font-semibold text-white text-base">Shuffle This Day</Text>
-            )}
-          </Pressable>
+          {/* Action Buttons */}
+          <View className="gap-3">
+            <Pressable
+              onPress={handleShuffle}
+              disabled={isShuffling}
+              style={({ pressed }) => [
+                { transform: [{ scale: pressed && !isShuffling ? 0.97 : 1 }] },
+                { opacity: pressed && !isShuffling ? 0.8 : 1 },
+              ]}
+              className="p-4 bg-primary rounded-lg items-center"
+            >
+              {isShuffling ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text className="font-bold text-white text-lg">🔄 Rotate Dishes</Text>
+              )}
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </ScreenContainer>

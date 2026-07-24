@@ -39,3 +39,13 @@
 - [ ] Test on iOS and web preview
 - [ ] Create checkpoint
 - [ ] Deliver to user
+
+
+## Phase 7: Family Favourites & Enhancements
+- [x] Add family favourite recipes (Chicken with Broccoli, Three-Cup Chicken, Salmon One-Pot Rice)
+- [x] Implement similar dish suggestions based on cuisine/protein
+- [x] Improve UI typography (larger fonts, better hierarchy)
+- [x] Add coloured category boxes for recipe types
+- [x] Add recipe scaling feature (adjust ingredients by pax)
+- [x] Implement dish rotation/swap functionality
+- [x] Create local setup guide and deployment instructions
