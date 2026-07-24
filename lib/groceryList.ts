@@ -68,6 +68,8 @@ function categorizeIngredient(ingredient: string): 'Protein' | 'Veg' | 'Pantry' 
     'cabbage',
     'kangkong',
     'bok choy',
+    'kai lan',
+    'nai bai',
     'carrot',
     'bell pepper',
     'snap pea',
@@ -132,10 +134,26 @@ function categorizeIngredient(ingredient: string): 'Protein' | 'Veg' | 'Pantry' 
     'soy',
     'miso',
     'ponzu',
+    'shallot',
+    'egg',
+    'milk',
+    'cheese',
+    'yogurt',
+    'cilantro',
+    'coriander',
+    'mint',
+    'curry leaf',
+    'tempeh',
+    'seaweed',
+    'ketchup',
+    'mayo',
+    'sriracha',
+    'hoisin',
   ];
   if (pantryKeywords.some((kw) => normalized.includes(kw))) return 'Pantry';
 
-  return 'Other';
+  // Default to Pantry for any unmatched items
+  return 'Pantry';
 }
 
 /**
@@ -211,7 +229,6 @@ export function groupGroceryItems(items: GroceryItem[]): Record<string, GroceryI
     Protein: [],
     Veg: [],
     Pantry: [],
-    Other: [],
   };
 
   for (const item of items) {
