@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, Pressable } from 'react-native';
+import { ScrollView, Text, View, Pressable, Alert } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -29,10 +29,37 @@ export default function RecipeDetailScreen() {
     toggleStaple(recipe.id);
   };
 
-  const handleDelete = async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    await deleteRecipe(recipe.id);
-    router.back();
+  const handleEdit = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({
+      pathname: '/edit-recipe' as any,
+      params: { recipeId: recipe.id },
+    });
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Recipe',
+      `Are you sure you want to delete "${recipe.name}"? This cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          onPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          },
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          onPress: async () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            await deleteRecipe(recipe.id);
+            router.back();
+          },
+          style: 'destructive',
+        },
+      ],
+    );
   };
 
   const handleBack = () => {
@@ -162,17 +189,33 @@ export default function RecipeDetailScreen() {
               </Pressable>
             </View>
 
-            <Pressable
-              onPress={handleDelete}
-              style={({ pressed }) => [
-                { transform: [{ scale: pressed ? 0.97 : 1 }] },
-                { opacity: pressed ? 0.8 : 1 },
-              ]}
-              className="p-3 bg-error/10 border border-error rounded-lg items-center"
-            >
-              <Text className="font-semibold text-error">Delete Recipe</Text>
-            </Pressable>
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={handleEdit}
+                style={({ pressed }) => [
+                  { transform: [{ scale: pressed ? 0.97 : 1 }] },
+                  { opacity: pressed ? 0.8 : 1 },
+                ]}
+                className="flex-1 p-3 bg-primary rounded-lg items-center"
+              >
+                <Text className="font-semibold text-white">✏️ Edit Recipe</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleDelete}
+                style={({ pressed }) => [
+                  { transform: [{ scale: pressed ? 0.97 : 1 }] },
+                  { opacity: pressed ? 0.8 : 1 },
+                ]}
+                className="flex-1 p-3 bg-error/10 border border-error rounded-lg items-center"
+              >
+                <Text className="font-semibold text-error">🗑️ Delete</Text>
+              </Pressable>
+            </View>
           </View>
+
+          {/* Spacing */}
+          <View className="h-4" />
         </View>
       </ScrollView>
     </ScreenContainer>

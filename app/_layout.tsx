@@ -93,6 +93,7 @@ export default function RootLayout() {
             <Stack.Screen name="add-recipe" />
             <Stack.Screen name="import-recipe" />
             <Stack.Screen name="recipe-detail" />
+            <Stack.Screen name="edit-recipe" />
             <Stack.Screen name="weekly-generator" />
             <Stack.Screen name="day-detail" />
             <Stack.Screen name="grocery-list" />
