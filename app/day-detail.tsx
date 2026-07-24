@@ -203,7 +203,7 @@ export default function DayDetailScreen() {
           {scaledMain && <RecipeCard recipe={scaledMain} isScaled={scaledServings !== day.main.servings} />}
 
           {/* Veg Side */}
-          {scaledVeg && <RecipeCard recipe={scaledVeg} isScaled={scaledServings !== day.vegSide!.servings} />}
+          {scaledVeg && day.vegSide && <RecipeCard recipe={scaledVeg} isScaled={scaledServings !== day.vegSide.servings} />}
 
           {/* Action Buttons */}
           <View className="gap-3">
