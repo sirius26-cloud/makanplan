@@ -10,9 +10,9 @@ import * as Haptics from 'expo-haptics';
 const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu'];
 
 export default function WeeklyGeneratorScreen() {
-  const { recipes, setWeeklyPlan } = useRecipes();
+  const { recipes, setWeeklyPlan, settings } = useRecipes();
   const router = useRouter();
-  const [peopleCount, setPeopleCount] = useState(4);
+  const [peopleCount, setPeopleCount] = useState(settings?.defaultServings || 4);
   const [numDays, setNumDays] = useState(5);
   const [selectedProteins, setSelectedProteins] = useState<ProteinType[]>([]);
   const [includeRiceDays, setIncludeRiceDays] = useState(true);
@@ -65,13 +65,14 @@ export default function WeeklyGeneratorScreen() {
               <Text className="text-lg text-primary font-bold">← Back</Text>
             </Pressable>
             <Text className="text-3xl font-bold text-foreground">Generate Weekly Plan</Text>
+            <Text className="text-base text-muted">Customize your meal plan preferences</Text>
           </View>
 
-          {/* People Count */}
+          {/* People Count (1-8 pax) */}
           <View className="gap-3">
-            <Text className="text-lg font-bold text-foreground">People Count</Text>
-            <View className="flex-row gap-2">
-              {[1, 2, 3, 4].map((count) => (
+            <Text className="text-lg font-bold text-foreground">Number of People (Pax)</Text>
+            <View className="flex-row gap-2 flex-wrap">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((count) => (
                 <Pressable
                   key={count}
                   onPress={() => {
@@ -81,7 +82,7 @@ export default function WeeklyGeneratorScreen() {
                   style={({ pressed }) => [
                     { transform: [{ scale: pressed ? 0.95 : 1 }] },
                   ]}
-                  className={`flex-1 py-3 rounded-lg items-center ${
+                  className={`flex-1 min-w-[45px] py-3 rounded-lg items-center ${
                     peopleCount === count ? 'bg-primary' : 'bg-surface border border-border'
                   }`}
                 >
@@ -97,11 +98,11 @@ export default function WeeklyGeneratorScreen() {
             </View>
           </View>
 
-          {/* Number of Days */}
+          {/* Number of Days (4-7 days) */}
           <View className="gap-3">
-            <Text className="text-lg font-bold text-foreground">Number of Days</Text>
-            <View className="flex-row gap-2">
-              {[5, 6, 7].map((days) => (
+            <Text className="text-lg font-bold text-foreground">Number of Days to Plan</Text>
+            <View className="flex-row gap-2 flex-wrap">
+              {[4, 5, 6, 7].map((days) => (
                 <Pressable
                   key={days}
                   onPress={() => {
@@ -120,7 +121,7 @@ export default function WeeklyGeneratorScreen() {
                       numDays === days ? 'text-white' : 'text-foreground'
                     }`}
                   >
-                    {days}
+                    {days} days
                   </Text>
                 </Pressable>
               ))}
@@ -182,6 +183,20 @@ export default function WeeklyGeneratorScreen() {
             </View>
           </View>
 
+          {/* Summary */}
+          <View className="p-4 bg-surface rounded-lg border border-border gap-2">
+            <Text className="text-base font-semibold text-foreground">Plan Summary</Text>
+            <Text className="text-sm text-muted">
+              📅 {numDays} days × {peopleCount} pax
+            </Text>
+            <Text className="text-sm text-muted">
+              🍗 Proteins: {selectedProteins.length > 0 ? selectedProteins.join(', ') : 'All'}
+            </Text>
+            <Text className="text-sm text-muted">
+              🍚 Rice/Noodle days: {includeRiceDays ? 'Included' : 'Excluded'}
+            </Text>
+          </View>
+
           {/* Generate Button */}
           <Pressable
             onPress={handleGeneratePlan}
@@ -198,6 +213,9 @@ export default function WeeklyGeneratorScreen() {
               <Text className="font-bold text-white text-lg">Generate Plan</Text>
             )}
           </Pressable>
+
+          {/* Spacing */}
+          <View className="h-4" />
         </View>
       </ScrollView>
     </ScreenContainer>

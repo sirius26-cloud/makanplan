@@ -57,10 +57,18 @@ export default function HomeScreen() {
     <ScreenContainer className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1">
         <View className="p-4 gap-6">
-          {/* Header */}
-          <View className="gap-1">
-            <Text className="text-4xl font-bold text-foreground">MakanPlan</Text>
-            <Text className="text-base text-muted">Weekly dinner planning made easy</Text>
+          {/* Header with Recipe Count */}
+          <View className="gap-2">
+            <View className="flex-row items-center justify-between">
+              <View className="gap-1 flex-1">
+                <Text className="text-4xl font-bold text-foreground">MakanPlan</Text>
+                <Text className="text-base text-muted">Weekly dinner planning made easy</Text>
+              </View>
+              <View className="bg-primary rounded-lg px-3 py-2 items-center">
+                <Text className="text-sm font-bold text-white">{recipes.length}</Text>
+                <Text className="text-xs text-white">Recipes</Text>
+              </View>
+            </View>
           </View>
 
           {/* Weekly Plan Section */}

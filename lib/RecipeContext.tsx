@@ -3,6 +3,7 @@ import { Recipe, WeeklyPlan, AppSettings } from './types';
 import { loadRecipes, saveRecipes, loadWeeklyPlan, saveWeeklyPlan, loadSettings, saveSettings } from './storage';
 import { SEED_RECIPES } from './seedRecipes';
 import { FAMILY_FAVOURITE_RECIPES, SIMILAR_DISHES } from './familyFavourites';
+import { FAMILY_RECIPES } from './familyRecipes';
 
 interface RecipeContextType {
   recipes: Recipe[];
@@ -50,9 +51,9 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
         loadSettings(),
       ]);
 
-      // If no recipes, seed with defaults (family favourites + general recipes)
+      // If no recipes, seed with defaults (family recipes + family favourites + general recipes)
       if (loadedRecipes.length === 0) {
-        const allRecipes = [...FAMILY_FAVOURITE_RECIPES, ...SEED_RECIPES];
+        const allRecipes = [...FAMILY_RECIPES, ...FAMILY_FAVOURITE_RECIPES, ...SEED_RECIPES];
         await saveRecipes(allRecipes);
         setRecipes(allRecipes);
       } else {
