@@ -69,8 +69,9 @@ export function generateWeeklyPlan(
     }
 
     // Determine if we need a veg side
+    // One-pot dishes (isRice) already include veg, so skip veg side for them
     let vegSide: Recipe | null = null;
-    if (!main.hasVeg) {
+    if (!main.hasVeg && !main.isRice) {
       // Pick a veg side, rotating through the pool
       const availableVegSides = vegSides.filter((v) => !usedVegSides.has(v.id));
 
