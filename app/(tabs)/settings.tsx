@@ -1,14 +1,33 @@
-import { ScrollView, Text, View, Pressable, FlatList, TextInput } from 'react-native';
+import { ScrollView, Text, View, Pressable, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
+import { exportRecipesAsJSON, importRecipesFromJSON } from '@/lib/recipeBackup';
+import { getCloudBackupConfig, disconnectCloudBackup } from '@/lib/cloudBackup';
+import * as DocumentPicker from 'expo-document-picker';
 
 export default function SettingsScreen() {
-  const { settings, updateSettings } = useRecipes();
+  const { settings, updateSettings, recipes, addRecipe } = useRecipes();
   const [defaultServings, setDefaultServings] = useState(settings.defaultServings);
   const [pantryStaples, setPantryStaples] = useState(settings.pantryStaples);
   const [newStapleName, setNewStapleName] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [cloudConfig, setCloudConfig] = useState<any>(null);
+
+  useEffect(() => {
+    loadCloudConfig();
+  }, []);
+
+  const loadCloudConfig = async () => {
+    try {
+      const config = await getCloudBackupConfig();
+      setCloudConfig(config);
+    } catch (error) {
+      console.error('Failed to load cloud config:', error);
+    }
+  };
 
   const handleSaveSettings = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -46,19 +65,101 @@ export default function SettingsScreen() {
     setPantryStaples(updated);
   };
 
+  const handleExportRecipes = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setIsExporting(true);
+      await exportRecipesAsJSON(recipes);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Export failed:', error);
+      Alert.alert('Export Failed', 'Could not export recipes. Please try again.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportRecipes = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setIsImporting(true);
+
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+      });
+
+      if (result && 'uri' in result) {
+        // Read file content
+        const fileUri = result.uri as string;
+        const response = await fetch(fileUri);
+        const fileContent = await response.text();
+        
+        // Import recipes
+        const importedRecipes = await importRecipesFromJSON(fileContent);
+
+        // Add each imported recipe
+        let addedCount = 0;
+        for (const recipe of importedRecipes) {
+          try {
+            await addRecipe(recipe);
+            addedCount++;
+          } catch (err) {
+            console.error(`Failed to add recipe ${recipe.name}:`, err);
+          }
+        }
+
+        Alert.alert(
+          'Import Successful',
+          `Imported ${addedCount} recipes. They have been added to your library.`,
+        );
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      console.error('Import failed:', error);
+      Alert.alert('Import Failed', 'Could not import recipes. Please check the file format.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleDisconnectCloud = async () => {
+    Alert.alert(
+      'Disconnect Cloud Backup',
+      'Are you sure? Auto-sync will be disabled.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disconnect',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await disconnectCloudBackup();
+              setCloudConfig(null);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to disconnect cloud backup');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <ScreenContainer className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1">
         <View className="p-4 gap-6">
           {/* Header */}
           <View className="gap-2">
-            <Text className="text-2xl font-bold text-foreground">Settings</Text>
-            <Text className="text-sm text-muted">Customize your preferences</Text>
+            <Text className="text-3xl font-bold text-foreground">Settings</Text>
+            <Text className="text-base text-muted">Customize your preferences & backups</Text>
           </View>
 
           {/* Default Servings */}
           <View className="gap-3">
-            <Text className="text-sm font-semibold text-foreground">Default Servings</Text>
+            <Text className="text-lg font-bold text-foreground">Default Servings</Text>
             <View className="flex-row gap-2">
               {[1, 2, 3, 4].map((count) => (
                 <Pressable
@@ -75,7 +176,7 @@ export default function SettingsScreen() {
                   }`}
                 >
                   <Text
-                    className={`font-semibold ${
+                    className={`font-bold ${
                       defaultServings === count ? 'text-white' : 'text-foreground'
                     }`}
                   >
@@ -88,75 +189,134 @@ export default function SettingsScreen() {
 
           {/* Pantry Staples */}
           <View className="gap-3">
-            <Text className="text-sm font-semibold text-foreground">Pantry Staples</Text>
-            <Text className="text-xs text-muted">
-              Items you always have in stock (won't appear in grocery list)
-            </Text>
+            <Text className="text-lg font-bold text-foreground">Pantry Staples</Text>
+            <Text className="text-sm text-muted">Items to exclude from grocery lists</Text>
 
-            {/* Add New Staple */}
+            {/* Add new staple */}
             <View className="flex-row gap-2">
               <TextInput
-                placeholder="Add staple..."
-                placeholderTextColor="#9BA1A6"
+                placeholder="Add staple (e.g., soy sauce)"
                 value={newStapleName}
                 onChangeText={setNewStapleName}
-                className="flex-1 p-3 bg-surface border border-border rounded-lg text-foreground"
+                className="flex-1 px-3 py-2 bg-surface border border-border rounded-lg text-foreground"
+                placeholderTextColor="#999"
               />
               <Pressable
                 onPress={handleAddPantryStaple}
-                style={({ pressed }) => [
-                  { transform: [{ scale: pressed ? 0.95 : 1 }] },
-                ]}
-                className="px-4 py-3 bg-primary rounded-lg items-center justify-center"
+                style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+                className="px-4 py-2 bg-primary rounded-lg items-center justify-center"
               >
-                <Text className="font-semibold text-white">+</Text>
+                <Text className="font-bold text-white">+</Text>
               </Pressable>
             </View>
 
-            {/* Staples List */}
-            <FlatList
-              data={pantryStaples}
-              keyExtractor={(item) => item.id}
-              scrollEnabled={false}
-              renderItem={({ item }) => (
-                <View className="flex-row items-center justify-between p-3 bg-surface rounded-lg border border-border mb-2">
+            {/* List of staples */}
+            <View className="gap-2">
+              {pantryStaples.map((staple) => (
+                <View key={staple.id} className="flex-row items-center justify-between p-3 bg-surface rounded-lg border border-border">
                   <Pressable
-                    onPress={() => handleTogglePantryStaple(item.id)}
-                    style={({ pressed }) => [
-                      { opacity: pressed ? 0.7 : 1 },
-                    ]}
-                    className="flex-1 flex-row items-center gap-3"
+                    onPress={() => handleTogglePantryStaple(staple.id)}
+                    className="flex-1"
                   >
-                    <View
-                      className={`w-5 h-5 rounded border-2 items-center justify-center ${
-                        item.isActive
-                          ? 'bg-success border-success'
-                          : 'border-border bg-background'
-                      }`}
-                    >
-                      {item.isActive && <Text className="text-white text-xs font-bold">✓</Text>}
-                    </View>
-                    <Text
-                      className={`flex-1 text-base ${
-                        item.isActive ? 'text-foreground' : 'text-muted'
-                      }`}
-                    >
-                      {item.name}
+                    <Text className={`text-base font-semibold ${staple.isActive ? 'text-foreground' : 'text-muted line-through'}`}>
+                      {staple.isActive ? '✓' : '○'} {staple.name}
                     </Text>
                   </Pressable>
-
                   <Pressable
-                    onPress={() => handleRemovePantryStaple(item.id)}
-                    style={({ pressed }) => [
-                      { transform: [{ scale: pressed ? 0.9 : 1 }] },
-                    ]}
-                    className="p-2"
+                    onPress={() => handleRemovePantryStaple(staple.id)}
+                    style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+                    className="px-2 py-1 bg-error rounded"
                   >
-                    <Text className="text-lg">✕</Text>
+                    <Text className="text-white font-bold text-sm">×</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Backup Section */}
+          <View className="gap-4 p-4 bg-surface rounded-lg border border-border">
+            <Text className="text-lg font-bold text-foreground">📱 Recipe Backups</Text>
+
+            {/* Local JSON Export */}
+            <View className="gap-2">
+              <Text className="text-base font-semibold text-foreground">Option 1: Local JSON Export</Text>
+              <Text className="text-sm text-muted">Download all recipes as a JSON file. Email or save to cloud storage.</Text>
+              <Pressable
+                onPress={handleExportRecipes}
+                disabled={isExporting}
+                style={({ pressed }) => [
+                  { transform: [{ scale: pressed && !isExporting ? 0.97 : 1 }] },
+                  { opacity: pressed && !isExporting ? 0.8 : 1 },
+                ]}
+                className="p-3 bg-primary rounded-lg items-center"
+              >
+                {isExporting ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="font-bold text-white">📥 Export All Recipes as JSON</Text>
+                )}
+              </Pressable>
+            </View>
+
+            {/* Local JSON Import */}
+            <View className="gap-2 pt-3 border-t border-border">
+              <Text className="text-base font-semibold text-foreground">Option 1b: Import JSON</Text>
+              <Text className="text-sm text-muted">Upload a JSON backup file to add recipes to your library.</Text>
+              <Pressable
+                onPress={handleImportRecipes}
+                disabled={isImporting}
+                style={({ pressed }) => [
+                  { transform: [{ scale: pressed && !isImporting ? 0.97 : 1 }] },
+                  { opacity: pressed && !isImporting ? 0.8 : 1 },
+                ]}
+                className="p-3 bg-primary rounded-lg items-center"
+              >
+                {isImporting ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="font-bold text-white">📤 Import Recipes from JSON</Text>
+                )}
+              </Pressable>
+            </View>
+
+            {/* Cloud Backup */}
+            <View className="gap-2 pt-3 border-t border-border">
+              <Text className="text-base font-semibold text-foreground">Option 2: Cloud Backup</Text>
+              <Text className="text-sm text-muted">Auto-sync recipes to Google Drive or OneDrive</Text>
+              
+              {cloudConfig?.provider ? (
+                <View className="gap-2">
+                  <View className="p-3 bg-background rounded-lg border border-success">
+                    <Text className="text-sm font-semibold text-success">
+                      ✅ Connected to {cloudConfig.provider === 'google-drive' ? 'Google Drive' : 'OneDrive'}
+                    </Text>
+                    {cloudConfig.lastSyncDate && (
+                      <Text className="text-xs text-muted mt-1">
+                        Last sync: {new Date(cloudConfig.lastSyncDate).toLocaleString()}
+                      </Text>
+                    )}
+                  </View>
+                  <Pressable
+                    onPress={handleDisconnectCloud}
+                    style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+                    className="p-3 bg-error rounded-lg items-center"
+                  >
+                    <Text className="font-bold text-white">🔌 Disconnect Cloud Backup</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View className="gap-2">
+                  <Text className="text-sm text-muted">Coming soon: Connect your Google Drive or OneDrive account for automatic recipe backups.</Text>
+                  <Pressable
+                    disabled
+                    className="p-3 bg-surface rounded-lg items-center opacity-50 border border-border"
+                  >
+                    <Text className="font-bold text-foreground">🔗 Connect Cloud Account (Coming Soon)</Text>
                   </Pressable>
                 </View>
               )}
-            />
+            </View>
           </View>
 
           {/* Save Button */}
@@ -166,19 +326,13 @@ export default function SettingsScreen() {
               { transform: [{ scale: pressed ? 0.97 : 1 }] },
               { opacity: pressed ? 0.8 : 1 },
             ]}
-            className="mt-6 p-4 bg-primary rounded-lg items-center"
+            className="p-4 bg-primary rounded-lg items-center"
           >
-            <Text className="font-semibold text-white text-base">Save Settings</Text>
+            <Text className="font-bold text-white text-lg">💾 Save Settings</Text>
           </Pressable>
 
-          {/* App Info */}
-          <View className="gap-2 mt-6 p-4 bg-surface rounded-lg border border-border">
-            <Text className="text-sm font-semibold text-foreground">MakanPlan</Text>
-            <Text className="text-xs text-muted">Version 1.0.0</Text>
-            <Text className="text-xs text-muted mt-2">
-              Weekly dinner planning for Singapore home cooks
-            </Text>
-          </View>
+          {/* Spacing */}
+          <View className="h-4" />
         </View>
       </ScrollView>
     </ScreenContainer>

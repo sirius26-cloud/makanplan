@@ -69,10 +69,8 @@ export function generateWeeklyPlan(
     }
 
     // Determine if we need a veg side
-    // Regular protein mains always need a veg side (unless they have veg built-in)
-    // One-pot dishes (isRice) already include veg, so they don't need a separate veg side
     let vegSide: Recipe | null = null;
-    if (!main.isRice && !main.hasVeg) {
+    if (!main.hasVeg) {
       // Pick a veg side, rotating through the pool
       const availableVegSides = vegSides.filter((v) => !usedVegSides.has(v.id));
 
