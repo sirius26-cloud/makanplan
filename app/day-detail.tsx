@@ -1,11 +1,11 @@
-import { ScrollView, Text, View, Pressable, ActivityIndicator, FlatList } from 'react-native';
+import { ScrollView, Text, View, Pressable, ActivityIndicator } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { regenerateMealDay } from '@/lib/mealGenerator';
+import { regenerateMealDay, generateMealDayWithFormat } from '@/lib/mealGenerator';
 import { scaleRecipe, getServingSizes } from '@/lib/recipeScaling';
-import { Recipe } from '@/lib/types';
+import { Recipe, MealDay } from '@/lib/types';
 import * as Haptics from 'expo-haptics';
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -49,55 +49,33 @@ function RecipeCard({ recipe, isScaled }: { recipe: Recipe; isScaled: boolean })
           <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
             {recipe.cuisineType}
           </Text>
-          <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded capitalize">
-            {recipe.protein}
-          </Text>
-          <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+          <Text className="text-xs bg-warning/20 text-warning px-2 py-1 rounded">
             {recipe.spiceLevel}
           </Text>
         </View>
 
-        <View className="flex-row gap-2 mt-1">
-          {recipe.hasVeg && (
-            <Text className="text-xs bg-success/20 text-success px-2 py-1 rounded font-semibold">
-              Has Veg
+        {/* Ingredients */}
+        <View className="gap-1">
+          <Text className="text-sm font-semibold text-foreground">Ingredients:</Text>
+          {recipe.ingredients.map((ing, idx) => (
+            <Text key={idx} className="text-sm text-muted">
+              • {ing}
             </Text>
-          )}
-          {recipe.isRice && (
-            <Text className="text-xs bg-warning/20 text-warning px-2 py-1 rounded font-semibold">
-              Rice-based
-            </Text>
-          )}
-          {isScaled && (
-            <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded font-semibold">
-              Scaled
-            </Text>
-          )}
+          ))}
         </View>
-      </View>
 
-      {/* Ingredients */}
-      <View className="gap-2 pt-3 border-t border-border">
-        <Text className="text-lg font-bold text-foreground">Ingredients ({recipe.servings} pax)</Text>
-        {recipe.ingredients && recipe.ingredients.length > 0 ? (
-          <View className="gap-2">
-            {recipe.ingredients.map((ingredient, index) => (
-              <Text key={index} className="text-base text-foreground leading-relaxed">
-                • {ingredient}
-              </Text>
-            ))}
-          </View>
-        ) : (
-          <Text className="text-base text-muted">No ingredients listed</Text>
+        {/* Instructions */}
+        <View className="gap-1">
+          <Text className="text-sm font-semibold text-foreground">Instructions:</Text>
+          <Text className="text-sm text-muted leading-relaxed">{recipe.instructions}</Text>
+        </View>
+
+        {/* Scaling Indicator */}
+        {isScaled && (
+          <Text className="text-xs text-success font-semibold">
+            ✓ Scaled for {recipe.servings} pax
+          </Text>
         )}
-      </View>
-
-      {/* Instructions */}
-      <View className="gap-2 pt-3 border-t border-border">
-        <Text className="text-lg font-bold text-foreground">Instructions</Text>
-        <Text className="text-base text-foreground leading-relaxed">
-          {recipe.instructions}
-        </Text>
       </View>
     </View>
   );
@@ -108,6 +86,7 @@ export default function DayDetailScreen() {
   const { dayIndex } = useLocalSearchParams();
   const router = useRouter();
   const [isShuffling, setIsShuffling] = useState(false);
+  const [isTogglingFormat, setIsTogglingFormat] = useState(false);
   const [scaledServings, setScaledServings] = useState(settings.defaultServings);
   const [scaledMain, setScaledMain] = useState<Recipe | null>(null);
   const [scaledVeg, setScaledVeg] = useState<Recipe | null>(null);
@@ -153,6 +132,35 @@ export default function DayDetailScreen() {
     }
   };
 
+  const handleToggleFormat = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setIsTogglingFormat(true);
+
+      const newFormat = day.format === 'one-pot' ? 'main-veg' : 'one-pot';
+      const newMealDay = await generateMealDayWithFormat(
+        recipes,
+        weeklyPlan,
+        index,
+        newFormat,
+        weeklyPlan.proteinFilters
+      );
+
+      const updatedPlan = {
+        ...weeklyPlan,
+        days: weeklyPlan.days.map((d, i) => (i === index ? newMealDay : d)),
+      };
+
+      await setWeeklyPlan(updatedPlan);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Failed to toggle format:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsTogglingFormat(false);
+    }
+  };
+
   const handleBack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.back();
@@ -168,6 +176,9 @@ export default function DayDetailScreen() {
               <Text className="text-lg text-primary font-bold">← Back</Text>
             </Pressable>
             <Text className="text-3xl font-bold text-foreground">Day {day.day}</Text>
+            <Text className="text-base text-muted">
+              {day.format === 'one-pot' ? '🍲 One-Pot Meal' : '🍽️ Main + Veg'}
+            </Text>
           </View>
 
           {/* Serving Size Selector */}
@@ -210,6 +221,26 @@ export default function DayDetailScreen() {
 
           {/* Action Buttons */}
           <View className="gap-3">
+            {/* Format Toggle Button */}
+            <Pressable
+              onPress={handleToggleFormat}
+              disabled={isTogglingFormat}
+              style={({ pressed }) => [
+                { transform: [{ scale: pressed && !isTogglingFormat ? 0.97 : 1 }] },
+                { opacity: pressed && !isTogglingFormat ? 0.8 : 1 },
+              ]}
+              className="p-4 bg-secondary rounded-lg items-center"
+            >
+              {isTogglingFormat ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text className="font-bold text-white text-lg">
+                  {day.format === 'one-pot' ? '🍽️ Switch to Main + Veg' : '🍲 Switch to One-Pot'}
+                </Text>
+              )}
+            </Pressable>
+
+            {/* Rotate Dishes Button */}
             <Pressable
               onPress={handleShuffle}
               disabled={isShuffling}

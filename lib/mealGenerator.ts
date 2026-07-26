@@ -89,10 +89,12 @@ export function generateWeeklyPlan(
       }
     }
 
+    const format = main.type === 'rice_noodle_one_pot' ? 'one-pot' : 'main-veg';
     days.push({
       day,
       main,
       vegSide,
+      format,
     });
   }
 
@@ -147,9 +149,63 @@ export function regenerateMealDay(
     vegSide = weightedRandomSelect(vegToUse);
   }
 
+  const format = main.type === 'rice_noodle_one_pot' ? 'one-pot' : 'main-veg';
   return {
     day: dayIndex + 1,
     main,
     vegSide,
+    format,
+  };
+}
+
+
+/**
+ * Generate a meal day with explicit format control (one-pot or main+veg)
+ */
+export async function generateMealDayWithFormat(
+  recipes: Recipe[],
+  currentPlan: WeeklyPlan,
+  dayIndex: number,
+  format: 'one-pot' | 'main-veg',
+  proteinFilters?: ProteinType[],
+): Promise<MealDay> {
+  const vegSides = recipes.filter((r) => r.type === 'veg_side');
+  const riceNoodleMains = recipes.filter((r) => r.type === 'rice_noodle_one_pot');
+  const proteinMains = recipes.filter(
+    (r) =>
+      r.type === 'protein_main' &&
+      (!proteinFilters || proteinFilters.length === 0 || proteinFilters.includes(r.protein)),
+  );
+
+  let main: Recipe;
+  let vegSide: Recipe | null = null;
+
+  if (format === 'one-pot') {
+    // Pick a one-pot main
+    if (riceNoodleMains.length === 0) {
+      throw new Error('No one-pot dishes available');
+    }
+    main = weightedRandomSelect(riceNoodleMains);
+  } else {
+    // Pick a protein main + veg side
+    if (proteinMains.length === 0) {
+      throw new Error('No protein mains available');
+    }
+    main = weightedRandomSelect(proteinMains);
+
+    // Pick a veg side if needed
+    if (!main.hasVeg && vegSides.length > 0) {
+      const currentVegSide = currentPlan.days[dayIndex]?.vegSide;
+      const availableVegSides = vegSides.filter((v) => v.id !== currentVegSide?.id);
+      const vegToUse = availableVegSides.length > 0 ? availableVegSides : vegSides;
+      vegSide = weightedRandomSelect(vegToUse);
+    }
+  }
+
+  return {
+    day: dayIndex + 1,
+    main,
+    vegSide,
+    format,
   };
 }

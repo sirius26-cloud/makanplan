@@ -26,6 +26,7 @@ export interface MealDay {
   day: number; // 1-7
   main: Recipe;
   vegSide: Recipe | null; // Null if main already has veg
+  format: 'one-pot' | 'main-veg'; // Explicit format toggle
 }
 
 export interface WeeklyPlan {
