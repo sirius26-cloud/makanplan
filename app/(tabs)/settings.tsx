@@ -6,9 +6,10 @@ import * as Haptics from 'expo-haptics';
 import { exportRecipesAsJSON, importRecipesFromJSON } from '@/lib/recipeBackup';
 import { getCloudBackupConfig, disconnectCloudBackup } from '@/lib/cloudBackup';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export default function SettingsScreen() {
-  const { settings, updateSettings, recipes, addRecipe } = useRecipes();
+  const { settings, updateSettings, recipes, replaceAllRecipes, mergeImportedRecipes } = useRecipes();
   const [defaultServings, setDefaultServings] = useState(settings.defaultServings);
   const [pantryStaples, setPantryStaples] = useState(settings.pantryStaples);
   const [newStapleName, setNewStapleName] = useState('');
@@ -90,36 +91,67 @@ export default function SettingsScreen() {
       });
 
       if (result && 'uri' in result) {
-        // Read file content
         const fileUri = result.uri as string;
-        const response = await fetch(fileUri);
-        const fileContent = await response.text();
-        
-        // Import recipes
+        const fileContent = await FileSystem.readAsStringAsync(fileUri);
         const importedRecipes = await importRecipesFromJSON(fileContent);
 
-        // Add each imported recipe
-        let addedCount = 0;
-        for (const recipe of importedRecipes) {
-          try {
-            await addRecipe(recipe);
-            addedCount++;
-          } catch (err) {
-            console.error(`Failed to add recipe ${recipe.name}:`, err);
-          }
-        }
-
+        // Show dialog to choose replace or add
         Alert.alert(
-          'Import Successful',
-          `Imported ${addedCount} recipes. They have been added to your library.`,
+          'Import Recipes',
+          `Found ${importedRecipes.length} recipes. What would you like to do?`,
+          [
+            {
+              text: 'Cancel',
+              onPress: () => setIsImporting(false),
+              style: 'cancel',
+            },
+            {
+              text: 'Replace All',
+              onPress: async () => {
+                try {
+                  const count = await replaceAllRecipes(importedRecipes);
+                  Alert.alert(
+                    'Import Successful',
+                    `Replaced library: ${count} recipes`,
+                  );
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                } catch (err) {
+                  Alert.alert('Error', 'Failed to replace recipes');
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                } finally {
+                  setIsImporting(false);
+                }
+              },
+              style: 'destructive',
+            },
+            {
+              text: 'Add to Library',
+              onPress: async () => {
+                try {
+                  const { added, skipped } = await mergeImportedRecipes(importedRecipes);
+                  let message = `Added ${added} new recipes`;
+                  if (skipped > 0) {
+                    message += `, skipped ${skipped} duplicates`;
+                  }
+                  Alert.alert('Import Successful', message);
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                } catch (err) {
+                  Alert.alert('Error', 'Failed to add recipes');
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                } finally {
+                  setIsImporting(false);
+                }
+              },
+            },
+          ],
         );
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        setIsImporting(false);
       }
     } catch (error) {
       console.error('Import failed:', error);
       Alert.alert('Import Failed', 'Could not import recipes. Please check the file format.');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
       setIsImporting(false);
     }
   };
@@ -148,39 +180,35 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScreenContainer className="flex-1 bg-background">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1">
-        <View className="p-4 gap-6">
-          {/* Header */}
-          <View className="gap-2">
-            <Text className="text-3xl font-bold text-foreground">Settings</Text>
-            <Text className="text-base text-muted">Customize your preferences & backups</Text>
-          </View>
-
+    <ScreenContainer className="bg-background">
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-6">
+        <View className="gap-8">
           {/* Default Servings */}
           <View className="gap-3">
-            <Text className="text-lg font-bold text-foreground">Default Servings</Text>
-            <View className="flex-row gap-2">
-              {[1, 2, 3, 4].map((count) => (
+            <Text className="text-2xl font-bold text-foreground">Default Servings</Text>
+            <View className="flex-row gap-3">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
                 <Pressable
-                  key={count}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setDefaultServings(count);
-                  }}
+                  key={num}
+                  onPress={() => setDefaultServings(num)}
                   style={({ pressed }) => [
-                    { transform: [{ scale: pressed ? 0.95 : 1 }] },
+                    {
+                      opacity: pressed ? 0.7 : 1,
+                      backgroundColor: defaultServings === num ? '#E85D2A' : '#f5f5f5',
+                      paddingVertical: 12,
+                      paddingHorizontal: 16,
+                      borderRadius: 8,
+                      flex: 1,
+                      alignItems: 'center',
+                    },
                   ]}
-                  className={`flex-1 py-3 rounded-lg items-center ${
-                    defaultServings === count ? 'bg-primary' : 'bg-surface border border-border'
-                  }`}
                 >
                   <Text
-                    className={`font-bold ${
-                      defaultServings === count ? 'text-white' : 'text-foreground'
+                    className={`text-lg font-semibold ${
+                      defaultServings === num ? 'text-white' : 'text-foreground'
                     }`}
                   >
-                    {count}
+                    {num}
                   </Text>
                 </Pressable>
               ))}
@@ -189,150 +217,162 @@ export default function SettingsScreen() {
 
           {/* Pantry Staples */}
           <View className="gap-3">
-            <Text className="text-lg font-bold text-foreground">Pantry Staples</Text>
-            <Text className="text-sm text-muted">Items to exclude from grocery lists</Text>
+            <Text className="text-2xl font-bold text-foreground">Pantry Staples</Text>
+            <Text className="text-base text-muted">Items to exclude from grocery lists</Text>
 
-            {/* Add new staple */}
-            <View className="flex-row gap-2">
+            {/* Add Staple Input */}
+            <View className="flex-row gap-3">
               <TextInput
                 placeholder="Add staple (e.g., soy sauce)"
                 value={newStapleName}
                 onChangeText={setNewStapleName}
-                className="flex-1 px-3 py-2 bg-surface border border-border rounded-lg text-foreground"
-                placeholderTextColor="#999"
+                className="flex-1 border border-border rounded-lg px-4 py-3 text-foreground"
+                placeholderTextColor="#9BA1A6"
               />
               <Pressable
                 onPress={handleAddPantryStaple}
-                style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.95 : 1 }] }]}
-                className="px-4 py-2 bg-primary rounded-lg items-center justify-center"
+                style={({ pressed }) => [
+                  {
+                    opacity: pressed ? 0.8 : 1,
+                    backgroundColor: '#E85D2A',
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  },
+                ]}
               >
-                <Text className="font-bold text-white">+</Text>
+                <Text className="text-white font-semibold text-lg">+</Text>
               </Pressable>
             </View>
 
-            {/* List of staples */}
+            {/* Staples List */}
             <View className="gap-2">
               {pantryStaples.map((staple) => (
-                <View key={staple.id} className="flex-row items-center justify-between p-3 bg-surface rounded-lg border border-border">
+                <View
+                  key={staple.id}
+                  className="flex-row items-center justify-between bg-surface rounded-lg p-4 border border-border"
+                >
                   <Pressable
                     onPress={() => handleTogglePantryStaple(staple.id)}
                     className="flex-1"
                   >
-                    <Text className={`text-base font-semibold ${staple.isActive ? 'text-foreground' : 'text-muted line-through'}`}>
+                    <Text
+                      className={`text-base font-medium ${
+                        staple.isActive
+                          ? 'text-foreground'
+                          : 'text-muted line-through'
+                      }`}
+                    >
                       {staple.isActive ? '✓' : '○'} {staple.name}
                     </Text>
                   </Pressable>
                   <Pressable
                     onPress={() => handleRemovePantryStaple(staple.id)}
-                    style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.95 : 1 }] }]}
-                    className="px-2 py-1 bg-error rounded"
+                    style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
                   >
-                    <Text className="text-white font-bold text-sm">×</Text>
+                    <Text className="text-error font-semibold">Remove</Text>
                   </Pressable>
                 </View>
               ))}
             </View>
           </View>
 
-          {/* Backup Section */}
-          <View className="gap-4 p-4 bg-surface rounded-lg border border-border">
-            <Text className="text-lg font-bold text-foreground">📱 Recipe Backups</Text>
+          {/* Recipe Backups */}
+          <View className="gap-3">
+            <Text className="text-2xl font-bold text-foreground">Recipe Backups</Text>
 
-            {/* Local JSON Export */}
+            {/* Export */}
             <View className="gap-2">
-              <Text className="text-base font-semibold text-foreground">Option 1: Local JSON Export</Text>
-              <Text className="text-sm text-muted">Download all recipes as a JSON file. Email or save to cloud storage.</Text>
+              <Text className="text-base font-semibold text-foreground">Option 1a: Export All Recipes</Text>
               <Pressable
                 onPress={handleExportRecipes}
                 disabled={isExporting}
                 style={({ pressed }) => [
-                  { transform: [{ scale: pressed && !isExporting ? 0.97 : 1 }] },
-                  { opacity: pressed && !isExporting ? 0.8 : 1 },
+                  {
+                    opacity: pressed && !isExporting ? 0.8 : 1,
+                    backgroundColor: '#E85D2A',
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                  },
                 ]}
-                className="p-3 bg-primary rounded-lg items-center"
               >
                 {isExporting ? (
-                  <ActivityIndicator size="small" color="white" />
+                  <ActivityIndicator color="white" />
                 ) : (
-                  <Text className="font-bold text-white">📥 Export All Recipes as JSON</Text>
+                  <Text className="text-white font-semibold text-base">📤 Export All Recipes as JSON</Text>
                 )}
               </Pressable>
             </View>
 
-            {/* Local JSON Import */}
-            <View className="gap-2 pt-3 border-t border-border">
-              <Text className="text-base font-semibold text-foreground">Option 1b: Import JSON</Text>
-              <Text className="text-sm text-muted">Upload a JSON backup file to add recipes to your library.</Text>
+            {/* Import */}
+            <View className="gap-2">
+              <Text className="text-base font-semibold text-foreground">Option 1b: Import Recipes from JSON</Text>
               <Pressable
                 onPress={handleImportRecipes}
                 disabled={isImporting}
                 style={({ pressed }) => [
-                  { transform: [{ scale: pressed && !isImporting ? 0.97 : 1 }] },
-                  { opacity: pressed && !isImporting ? 0.8 : 1 },
+                  {
+                    opacity: pressed && !isImporting ? 0.8 : 1,
+                    backgroundColor: '#2D5016',
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                  },
                 ]}
-                className="p-3 bg-primary rounded-lg items-center"
               >
                 {isImporting ? (
-                  <ActivityIndicator size="small" color="white" />
+                  <ActivityIndicator color="white" />
                 ) : (
-                  <Text className="font-bold text-white">📤 Import Recipes from JSON</Text>
+                  <Text className="text-white font-semibold text-base">📥 Import Recipes from JSON</Text>
                 )}
               </Pressable>
             </View>
 
-            {/* Cloud Backup */}
-            <View className="gap-2 pt-3 border-t border-border">
-              <Text className="text-base font-semibold text-foreground">Option 2: Cloud Backup</Text>
-              <Text className="text-sm text-muted">Auto-sync recipes to Google Drive or OneDrive</Text>
-              
-              {cloudConfig?.provider ? (
-                <View className="gap-2">
-                  <View className="p-3 bg-background rounded-lg border border-success">
-                    <Text className="text-sm font-semibold text-success">
-                      ✅ Connected to {cloudConfig.provider === 'google-drive' ? 'Google Drive' : 'OneDrive'}
-                    </Text>
-                    {cloudConfig.lastSyncDate && (
-                      <Text className="text-xs text-muted mt-1">
-                        Last sync: {new Date(cloudConfig.lastSyncDate).toLocaleString()}
-                      </Text>
-                    )}
-                  </View>
+            {/* Cloud Backup Status */}
+            {cloudConfig ? (
+              <View className="gap-2">
+                <Text className="text-base font-semibold text-foreground">Option 2: Cloud Backup</Text>
+                <View className="bg-surface rounded-lg p-4 border border-border">
+                  <Text className="text-sm text-foreground mb-2">✓ Cloud backup connected</Text>
                   <Pressable
                     onPress={handleDisconnectCloud}
-                    style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.97 : 1 }] }]}
-                    className="p-3 bg-error rounded-lg items-center"
+                    style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
                   >
-                    <Text className="font-bold text-white">🔌 Disconnect Cloud Backup</Text>
+                    <Text className="text-error font-semibold">Disconnect</Text>
                   </Pressable>
                 </View>
-              ) : (
-                <View className="gap-2">
-                  <Text className="text-sm text-muted">Coming soon: Connect your Google Drive or OneDrive account for automatic recipe backups.</Text>
-                  <Pressable
-                    disabled
-                    className="p-3 bg-surface rounded-lg items-center opacity-50 border border-border"
-                  >
-                    <Text className="font-bold text-foreground">🔗 Connect Cloud Account (Coming Soon)</Text>
-                  </Pressable>
+              </View>
+            ) : (
+              <View className="gap-2">
+                <Text className="text-base font-semibold text-foreground">Option 2: Cloud Backup</Text>
+                <View className="bg-surface rounded-lg p-4 border border-border">
+                  <Text className="text-sm text-muted">Cloud backup not configured</Text>
                 </View>
-              )}
-            </View>
+              </View>
+            )}
           </View>
 
           {/* Save Button */}
           <Pressable
             onPress={handleSaveSettings}
             style={({ pressed }) => [
-              { transform: [{ scale: pressed ? 0.97 : 1 }] },
-              { opacity: pressed ? 0.8 : 1 },
+              {
+                opacity: pressed ? 0.8 : 1,
+                backgroundColor: '#E85D2A',
+                paddingVertical: 14,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                alignItems: 'center',
+              },
             ]}
-            className="p-4 bg-primary rounded-lg items-center"
           >
-            <Text className="font-bold text-white text-lg">💾 Save Settings</Text>
+            <Text className="text-white font-bold text-lg">Save Settings</Text>
           </Pressable>
-
-          {/* Spacing */}
-          <View className="h-4" />
         </View>
       </ScrollView>
     </ScreenContainer>

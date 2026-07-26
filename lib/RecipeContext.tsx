@@ -18,6 +18,8 @@ interface RecipeContextType {
   toggleFavourite: (id: string) => Promise<void>;
   toggleStaple: (id: string) => Promise<void>;
   getSimilarDishes: (recipeId: string) => Recipe[];
+  replaceAllRecipes: (recipes: Recipe[]) => Promise<number>;
+  mergeImportedRecipes: (recipes: Recipe[]) => Promise<{ added: number; skipped: number }>;
 
   // Weekly plan operations
   setWeeklyPlan: (plan: WeeklyPlan | null) => Promise<void>;
@@ -110,6 +112,38 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     return recipes.filter((r) => similarIds.includes(r.id));
   }
 
+  async function replaceAllRecipes(newRecipes: Recipe[]): Promise<number> {
+    setRecipes(newRecipes);
+    await saveRecipes(newRecipes);
+    return newRecipes.length;
+  }
+
+  async function mergeImportedRecipes(importedRecipes: Recipe[]): Promise<{ added: number; skipped: number }> {
+    const existingIds = new Set(recipes.map((r) => r.id));
+    const existingNames = new Set(recipes.map((r) => r.name.toLowerCase()));
+
+    let added = 0;
+    let skipped = 0;
+    const newRecipes: Recipe[] = [];
+
+    for (const recipe of importedRecipes) {
+      if (existingIds.has(recipe.id) || existingNames.has(recipe.name.toLowerCase())) {
+        skipped++;
+      } else {
+        newRecipes.push(recipe);
+        existingIds.add(recipe.id);
+        existingNames.add(recipe.name.toLowerCase());
+        added++;
+      }
+    }
+
+    const mergedRecipes = [...recipes, ...newRecipes];
+    setRecipes(mergedRecipes);
+    await saveRecipes(mergedRecipes);
+
+    return { added, skipped };
+  }
+
   async function setWeeklyPlan(plan: WeeklyPlan | null) {
     setWeeklyPlanState(plan);
     if (plan) {
@@ -137,6 +171,8 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     toggleFavourite,
     toggleStaple,
     getSimilarDishes,
+    replaceAllRecipes,
+    mergeImportedRecipes,
     setWeeklyPlan,
     updateSettings,
     reload,
