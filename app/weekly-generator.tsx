@@ -10,7 +10,7 @@ import * as Haptics from 'expo-haptics';
 const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu'];
 
 export default function WeeklyGeneratorScreen() {
-  const { recipes, setWeeklyPlan, settings } = useRecipes();
+  const { recipes, setWeeklyPlan, settings, isRecipeAllowed, getMealHistoryRecently } = useRecipes();
   const router = useRouter();
   const [peopleCount, setPeopleCount] = useState(settings?.defaultServings || 4);
   const [numDays, setNumDays] = useState(5);
@@ -37,7 +37,21 @@ export default function WeeklyGeneratorScreen() {
       // If no proteins selected, use all (undefined)
       const proteinFilters = selectedProteins.length > 0 ? selectedProteins : undefined;
 
-      const plan = generateWeeklyPlan(recipes, peopleCount, numDays, proteinFilters, includeRiceDays);
+      // Create dietary restriction filter
+      const dietaryFilter = (recipe: any) => isRecipeAllowed(recipe);
+
+      // Get recently served recipes (last 30 days)
+      const recentlyServed = getMealHistoryRecently(settings?.mealHistoryDays || 30);
+
+      const plan = generateWeeklyPlan(
+        recipes,
+        peopleCount,
+        numDays,
+        proteinFilters,
+        includeRiceDays,
+        dietaryFilter,
+        recentlyServed,
+      );
       await setWeeklyPlan(plan);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

@@ -82,7 +82,7 @@ function RecipeCard({ recipe, isScaled }: { recipe: Recipe; isScaled: boolean })
 }
 
 export default function DayDetailScreen() {
-  const { weeklyPlan, setWeeklyPlan, recipes, settings } = useRecipes();
+  const { weeklyPlan, setWeeklyPlan, recipes, settings, isRecipeAllowed, getMealHistoryRecently } = useRecipes();
   const { dayIndex } = useLocalSearchParams();
   const router = useRouter();
   const [isShuffling, setIsShuffling] = useState(false);
@@ -116,7 +116,17 @@ export default function DayDetailScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setIsShuffling(true);
 
-      const newMealDay = regenerateMealDay(recipes, weeklyPlan, index, weeklyPlan.proteinFilters);
+      const dietaryFilter = (recipe: Recipe) => isRecipeAllowed(recipe);
+      const recentlyServed = getMealHistoryRecently(settings?.mealHistoryDays || 30);
+
+      const newMealDay = regenerateMealDay(
+        recipes,
+        weeklyPlan,
+        index,
+        weeklyPlan.proteinFilters,
+        dietaryFilter,
+        recentlyServed,
+      );
       const updatedPlan = {
         ...weeklyPlan,
         days: weeklyPlan.days.map((d, i) => (i === index ? newMealDay : d)),

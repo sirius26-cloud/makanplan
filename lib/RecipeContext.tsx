@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Recipe, WeeklyPlan, AppSettings } from './types';
-import { loadRecipes, saveRecipes, loadWeeklyPlan, saveWeeklyPlan, loadSettings, saveSettings } from './storage';
+import { Recipe, WeeklyPlan, AppSettings, MealHistoryEntry, DietaryRestriction } from './types';
+import { loadRecipes, saveRecipes, loadWeeklyPlan, saveWeeklyPlan, loadSettings, saveSettings, addMealHistory, getMealHistory, updateDietaryRestrictions, getDietaryRestrictions } from './storage';
 import { SEED_RECIPES } from './seedRecipes';
 import { FAMILY_FAVOURITE_RECIPES, SIMILAR_DISHES } from './familyFavourites';
 import { FAMILY_RECIPES } from './familyRecipes';
@@ -26,6 +26,15 @@ interface RecipeContextType {
 
   // Settings operations
   updateSettings: (settings: AppSettings) => Promise<void>;
+
+  // Meal history operations
+  addMealToHistory: (recipeId: string, recipeName: string) => Promise<void>;
+  getMealHistoryRecently: (days: number) => string[]; // Returns recently served recipe IDs
+
+  // Dietary filter operations
+  updateDietaryFilters: (restrictions: DietaryRestriction[]) => Promise<void>;
+  getDietaryFilters: () => DietaryRestriction[];
+  isRecipeAllowed: (recipe: Recipe) => boolean; // Check if recipe matches dietary restrictions
 
   // Reload data
   reload: () => Promise<void>;
@@ -156,6 +165,52 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     await saveSettings(newSettings);
   }
 
+  async function addMealToHistory(recipeId: string, recipeName: string) {
+    const entry: MealHistoryEntry = {
+      recipeId,
+      recipeName,
+      dateServed: Date.now(),
+    };
+    await addMealHistory(entry);
+    await loadData();
+  }
+
+  function getMealHistoryRecently(days: number): string[] {
+    if (!settings?.mealHistory) return [];
+    const cutoffDate = Date.now() - days * 24 * 60 * 60 * 1000;
+    return settings.mealHistory
+      .filter((entry) => entry.dateServed > cutoffDate)
+      .map((entry) => entry.recipeId);
+  }
+
+  async function updateDietaryFilters(restrictions: DietaryRestriction[]) {
+    await updateDietaryRestrictions(restrictions);
+    if (settings) {
+      settings.dietaryRestrictions = restrictions;
+      setSettingsState(settings);
+    }
+  }
+
+  function getDietaryFilters(): DietaryRestriction[] {
+    return settings?.dietaryRestrictions || [];
+  }
+
+  function isRecipeAllowed(recipe: Recipe): boolean {
+    const activeRestrictions = getDietaryFilters().filter((r) => r.isActive);
+    if (activeRestrictions.length === 0) return true;
+
+    for (const restriction of activeRestrictions) {
+      const restrictionName = restriction.name.toLowerCase();
+      if (restrictionName.includes('pork') && recipe.protein === 'chicken') return true;
+      if (restrictionName.includes('beef') && recipe.protein === 'beef') return false;
+      if (restrictionName.includes('shellfish') && recipe.protein === 'seafood') return false;
+      if (restrictionName.includes('fish') && recipe.protein === 'fish') return false;
+      if (restrictionName.includes('chicken') && recipe.protein === 'chicken') return false;
+      if (restrictionName.includes('tofu') && recipe.protein === 'tofu') return false;
+    }
+    return true;
+  }
+
   async function reload() {
     await loadData();
   }
@@ -163,7 +218,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   const value: RecipeContextType = {
     recipes,
     weeklyPlan,
-    settings: settings || { defaultServings: 4, pantryStaples: [] },
+    settings: settings || { defaultServings: 4, pantryStaples: [], mealHistory: [], dietaryRestrictions: [], mealHistoryDays: 30 },
     isLoading,
     addRecipe,
     updateRecipe,
@@ -175,6 +230,11 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     mergeImportedRecipes,
     setWeeklyPlan,
     updateSettings,
+    addMealToHistory,
+    getMealHistoryRecently,
+    updateDietaryFilters,
+    getDietaryFilters,
+    isRecipeAllowed,
     reload,
   };
 

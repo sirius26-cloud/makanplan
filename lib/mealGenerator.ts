@@ -37,11 +37,26 @@ export function generateWeeklyPlan(
   numDays: number,
   proteinFilters?: ProteinType[],
   includeRiceDays: boolean = false,
+  dietaryRestrictionFilter?: (recipe: Recipe) => boolean,
+  recentlyServedRecipeIds?: string[],
 ): WeeklyPlan {
   // Filter recipes by proteins if specified
-  const availableRecipes = proteinFilters && proteinFilters.length > 0
+  let availableRecipes = proteinFilters && proteinFilters.length > 0
     ? recipes.filter((r) => proteinFilters.includes(r.protein))
     : recipes;
+
+  // Apply dietary restrictions filter
+  if (dietaryRestrictionFilter) {
+    availableRecipes = availableRecipes.filter(dietaryRestrictionFilter);
+  }
+
+  // Deprioritize recently served recipes
+  if (recentlyServedRecipeIds && recentlyServedRecipeIds.length > 0) {
+    const recentIds = new Set(recentlyServedRecipeIds);
+    const recent = availableRecipes.filter((r) => recentIds.has(r.id));
+    const notRecent = availableRecipes.filter((r) => !recentIds.has(r.id));
+    availableRecipes = [...notRecent, ...recent];
+  }
 
   // Separate by type
   const mains = availableRecipes.filter((r) => r.type === 'protein_main');
@@ -116,10 +131,25 @@ export function regenerateMealDay(
   currentPlan: WeeklyPlan,
   dayIndex: number,
   proteinFilters?: ProteinType[],
+  dietaryRestrictionFilter?: (recipe: Recipe) => boolean,
+  recentlyServedRecipeIds?: string[],
 ): MealDay {
-  const availableRecipes = proteinFilters && proteinFilters.length > 0
+  let availableRecipes = proteinFilters && proteinFilters.length > 0
     ? recipes.filter((r) => proteinFilters.includes(r.protein))
     : recipes;
+
+  // Apply dietary restrictions filter
+  if (dietaryRestrictionFilter) {
+    availableRecipes = availableRecipes.filter(dietaryRestrictionFilter);
+  }
+
+  // Deprioritize recently served recipes
+  if (recentlyServedRecipeIds && recentlyServedRecipeIds.length > 0) {
+    const recentIds = new Set(recentlyServedRecipeIds);
+    const recent = availableRecipes.filter((r) => recentIds.has(r.id));
+    const notRecent = availableRecipes.filter((r) => !recentIds.has(r.id));
+    availableRecipes = [...notRecent, ...recent];
+  }
 
   const mains = availableRecipes.filter((r) => r.type === 'protein_main');
   const riceNoodleMains = availableRecipes.filter((r) => r.type === 'rice_noodle_one_pot');

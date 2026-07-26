@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Recipe, WeeklyPlan, AppSettings, PantryStaple } from './types';
+import { Recipe, WeeklyPlan, AppSettings, PantryStaple, MealHistoryEntry, DietaryRestriction } from './types';
 
 const RECIPES_KEY = 'makanplan_recipes';
 const WEEKLY_PLAN_KEY = 'makanplan_weekly_plan';
@@ -22,6 +22,9 @@ const DEFAULT_PANTRY_STAPLES: PantryStaple[] = [
 const DEFAULT_SETTINGS: AppSettings = {
   defaultServings: 4,
   pantryStaples: DEFAULT_PANTRY_STAPLES,
+  mealHistory: [],
+  dietaryRestrictions: [],
+  mealHistoryDays: 30,
 };
 
 // Recipe storage
@@ -106,4 +109,32 @@ export async function updatePantryStaples(staples: PantryStaple[]): Promise<void
   const settings = await loadSettings();
   settings.pantryStaples = staples;
   await saveSettings(settings);
+}
+
+// Meal history operations
+export async function addMealHistory(entry: MealHistoryEntry): Promise<void> {
+  const settings = await loadSettings();
+  settings.mealHistory = settings.mealHistory || [];
+  settings.mealHistory.push(entry);
+  // Keep only last 90 days of history
+  const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  settings.mealHistory = settings.mealHistory.filter((e) => e.dateServed > ninetyDaysAgo);
+  await saveSettings(settings);
+}
+
+export async function getMealHistory(): Promise<MealHistoryEntry[]> {
+  const settings = await loadSettings();
+  return settings.mealHistory || [];
+}
+
+// Dietary restrictions operations
+export async function updateDietaryRestrictions(restrictions: DietaryRestriction[]): Promise<void> {
+  const settings = await loadSettings();
+  settings.dietaryRestrictions = restrictions;
+  await saveSettings(settings);
+}
+
+export async function getDietaryRestrictions(): Promise<DietaryRestriction[]> {
+  const settings = await loadSettings();
+  return settings.dietaryRestrictions || [];
 }

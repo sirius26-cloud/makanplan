@@ -52,7 +52,23 @@ export interface PantryStaple {
   isActive: boolean;
 }
 
+export interface MealHistoryEntry {
+  recipeId: string;
+  recipeName: string;
+  dateServed: number; // Timestamp
+  dayOfWeek?: number; // 1-7 for tracking which day of week
+}
+
+export interface DietaryRestriction {
+  id: string;
+  name: string; // e.g., 'no pork', 'no shellfish', 'no beef'
+  isActive: boolean;
+}
+
 export interface AppSettings {
   defaultServings: number; // 1-4, default 4
   pantryStaples: PantryStaple[];
+  mealHistory: MealHistoryEntry[]; // Track recently served meals
+  dietaryRestrictions: DietaryRestriction[]; // Dietary filters
+  mealHistoryDays: number; // How many days to avoid repeating meals (default 30)
 }

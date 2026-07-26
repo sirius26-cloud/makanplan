@@ -9,10 +9,12 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 
 export default function SettingsScreen() {
-  const { settings, updateSettings, recipes, replaceAllRecipes, mergeImportedRecipes } = useRecipes();
+  const { settings, updateSettings, recipes, replaceAllRecipes, mergeImportedRecipes, updateDietaryFilters, getDietaryFilters } = useRecipes();
   const [defaultServings, setDefaultServings] = useState(settings.defaultServings);
   const [pantryStaples, setPantryStaples] = useState(settings.pantryStaples);
   const [newStapleName, setNewStapleName] = useState('');
+  const [dietaryRestrictions, setDietaryRestrictions] = useState(getDietaryFilters());
+  const [newRestrictionName, setNewRestrictionName] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [cloudConfig, setCloudConfig] = useState<any>(null);
@@ -32,11 +34,40 @@ export default function SettingsScreen() {
 
   const handleSaveSettings = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await updateDietaryFilters(dietaryRestrictions);
     await updateSettings({
       defaultServings,
       pantryStaples,
+      mealHistory: settings.mealHistory || [],
+      dietaryRestrictions,
+      mealHistoryDays: settings.mealHistoryDays || 30,
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleToggleDietaryRestriction = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const updated = dietaryRestrictions.map((r) =>
+      r.id === id ? { ...r, isActive: !r.isActive } : r,
+    );
+    setDietaryRestrictions(updated);
+  };
+
+  const handleAddDietaryRestriction = () => {
+    if (!newRestrictionName.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newRestriction = {
+      id: Date.now().toString(),
+      name: newRestrictionName.trim(),
+      isActive: true,
+    };
+    setDietaryRestrictions([...dietaryRestrictions, newRestriction]);
+    setNewRestrictionName('');
+  };
+
+  const handleRemoveDietaryRestriction = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDietaryRestrictions(dietaryRestrictions.filter((r) => r.id !== id));
   };
 
   const handleTogglePantryStaple = (id: string) => {
@@ -90,8 +121,8 @@ export default function SettingsScreen() {
         type: 'application/json',
       });
 
-      if (result && 'uri' in result) {
-        const fileUri = result.uri as string;
+      if (result && !result.canceled && result.assets && result.assets.length > 0) {
+        const fileUri = result.assets[0].uri;
         const fileContent = await FileSystem.readAsStringAsync(fileUri);
         const importedRecipes = await importRecipesFromJSON(fileContent);
 
@@ -146,6 +177,7 @@ export default function SettingsScreen() {
           ],
         );
       } else {
+        Alert.alert('Import Cancelled', 'No file was selected.');
         setIsImporting(false);
       }
     } catch (error) {
@@ -276,6 +308,72 @@ export default function SettingsScreen() {
                   </Pressable>
                 </View>
               ))}
+            </View>
+          </View>
+
+          {/* Dietary Restrictions */}
+          <View className="gap-3">
+            <Text className="text-2xl font-bold text-foreground">Dietary Restrictions</Text>
+            <Text className="text-base text-muted">Exclude recipes based on dietary preferences</Text>
+
+            {/* Add Restriction Input */}
+            <View className="flex-row gap-3">
+              <TextInput
+                placeholder="Add restriction (e.g., no pork)"
+                value={newRestrictionName}
+                onChangeText={setNewRestrictionName}
+                className="flex-1 border border-border rounded-lg px-4 py-3 text-foreground"
+                placeholderTextColor="#9BA1A6"
+              />
+              <Pressable
+                onPress={handleAddDietaryRestriction}
+                style={({ pressed }) => [{
+                  opacity: pressed ? 0.8 : 1,
+                  backgroundColor: '#E85D2A',
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }]}
+              >
+                <Text className="text-white font-semibold text-lg">+</Text>
+              </Pressable>
+            </View>
+
+            {/* Restrictions List */}
+            <View className="gap-2">
+              {dietaryRestrictions.length === 0 ? (
+                <Text className="text-base text-muted italic">No dietary restrictions set</Text>
+              ) : (
+                dietaryRestrictions.map((restriction) => (
+                  <View
+                    key={restriction.id}
+                    className="flex-row items-center justify-between bg-surface rounded-lg p-4 border border-border"
+                  >
+                    <Pressable
+                      onPress={() => handleToggleDietaryRestriction(restriction.id)}
+                      className="flex-1"
+                    >
+                      <Text
+                        className={`text-base font-medium ${
+                          restriction.isActive
+                            ? 'text-foreground'
+                            : 'text-muted line-through'
+                        }`}
+                      >
+                        {restriction.isActive ? '✓' : '○'} {restriction.name}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleRemoveDietaryRestriction(restriction.id)}
+                      style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+                    >
+                      <Text className="text-error font-semibold">Remove</Text>
+                    </Pressable>
+                  </View>
+                ))
+              )}
             </View>
           </View>
 
