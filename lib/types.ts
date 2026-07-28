@@ -17,7 +17,7 @@ export interface Recipe {
   ingredients: string[]; // Ingredient names with quantities
   instructions: string;
   servings: number; // Default servings
-  cuisineType: 'Japanese' | 'Thai' | 'Cantonese' | 'Vietnamese' | 'Western' | 'Mixed';
+  cuisineType: 'Japanese' | 'Thai' | 'Cantonese' | 'Vietnamese' | 'Western' | 'Mixed' | 'Taiwanese';
   spiceLevel: 'light' | 'light-medium' | 'medium'; // User prefers light/clean dinners
   createdAt: number; // Timestamp
 }

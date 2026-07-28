@@ -87,10 +87,19 @@
 - [ ] Allow users to mark prep steps as complete
 - [ ] Test timeline feature
 
-## Phase 13: Final Testing & Delivery
+## Phase 13: Recipe Data Persistence Fix
+- [x] Diagnose root cause of recipe reset on publish
+- [x] Create userRecipes.ts with 44 curated recipes
+- [x] Update RecipeContext to use user recipes as defaults
+- [x] Fix seeding logic to preserve data on future publishes
+- [x] Add Taiwanese cuisine type support
+- [x] Verify TypeScript compilation
+
+## Phase 14: Final Testing & Delivery
 - [ ] Test all user flows end-to-end
 - [ ] Verify JSON import works with real files
 - [ ] Test meal history tracking
 - [ ] Test dietary filters
+- [ ] Test recipe persistence on publish
 - [ ] Create final checkpoint
 - [ ] Deliver app to user

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Recipe, WeeklyPlan, AppSettings, MealHistoryEntry, DietaryRestriction } from './types';
 import { loadRecipes, saveRecipes, loadWeeklyPlan, saveWeeklyPlan, loadSettings, saveSettings, addMealHistory, getMealHistory, updateDietaryRestrictions, getDietaryRestrictions } from './storage';
+import { USER_RECIPES } from './userRecipes';
 import { SEED_RECIPES } from './seedRecipes';
 import { FAMILY_FAVOURITE_RECIPES, SIMILAR_DISHES } from './familyFavourites';
 import { FAMILY_RECIPES } from './familyRecipes';
@@ -62,17 +63,13 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
         loadSettings(),
       ]);
 
-      // If no recipes, seed with defaults (family recipes + family favourites + general recipes)
+      // If no recipes, seed with user's 44 curated recipes
       if (loadedRecipes.length === 0) {
-        const allRecipes = [...FAMILY_RECIPES, ...FAMILY_FAVOURITE_RECIPES, ...SEED_RECIPES];
-        await saveRecipes(allRecipes);
-        setRecipes(allRecipes);
+        await saveRecipes(USER_RECIPES);
+        setRecipes(USER_RECIPES);
       } else {
-        // Merge any new family favourites with existing recipes
-        const existingIds = new Set(loadedRecipes.map((r) => r.id));
-        const newFavourites = FAMILY_FAVOURITE_RECIPES.filter((r) => !existingIds.has(r.id));
-        const mergedRecipes = [...newFavourites, ...loadedRecipes];
-        setRecipes(mergedRecipes);
+        // Use existing recipes (don't reset on every publish)
+        setRecipes(loadedRecipes);
       }
 
       setWeeklyPlanState(loadedPlan);
