@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 
-import { getGoogleDrivePhotoUri, getStoredGoogleDriveAccessToken } from "@/lib/googleDrivePhotos";
 import type { RecipePhoto } from "@/lib/types";
 
 type RecipePhotoProps = {
@@ -11,39 +9,20 @@ type RecipePhotoProps = {
 };
 
 export function RecipePhotoView({ photo, variant }: RecipePhotoProps) {
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    if (!photo) {
-      setAccessToken(null);
-      return;
-    }
-    getStoredGoogleDriveAccessToken().then((token) => {
-      if (isMounted) setAccessToken(token);
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, [photo?.driveFileId]);
-
   if (!photo) return null;
 
   const style = variant === "thumbnail" ? styles.thumbnail : variant === "detail" ? styles.detail : styles.editor;
-  if (!accessToken) {
+  if (!photo.localUri) {
     return (
       <View style={[style, styles.unavailable]}>
-        <Text style={styles.unavailableText}>Recipe photo</Text>
+        <Text style={styles.unavailableText}>Re-add recipe photo</Text>
       </View>
     );
   }
 
   return (
     <Image
-      source={{
-        uri: getGoogleDrivePhotoUri(photo.driveFileId),
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }}
+      source={{ uri: photo.localUri }}
       contentFit="cover"
       style={style}
       transition={150}

@@ -123,7 +123,7 @@
 - [x] Increase font sizes modestly without changing layouts or unrelated styling
 - [x] Add a direct photo import action for existing recipes using the current Google Drive photo workflow
 - [x] Run targeted checks and verify no unrelated behavior changed
-- [ ] Save checkpoint with only scoped changes
+- [x] Save checkpoint with only scoped changes
 
 > Scope note: Do not change any feature behavior other than font sizing and existing-recipe photo import access.
 
@@ -131,6 +131,16 @@
 - [x] Inspect the current Google Drive redirect URI generation
 - [x] Force the iOS OAuth flow to use the stable client-scheme redirect URI
 - [x] Validate configuration and document the exact Google Cloud registration value
-- [ ] Save checkpoint with only the OAuth redirect fix
+- [x] Save checkpoint with only the OAuth redirect fix
 
 > Scope note: Do not modify recipe, photo, navigation, or typography behavior beyond the redirect URI fix.
+
+## Phase 18: Scoped Local Device Recipe Photo Storage
+- [x] Inspect the current Google Drive photo layer and local file persistence requirements
+- [x] Replace Google Drive photo metadata and upload logic with local device file references
+- [x] Keep existing recipe photo add, replace, remove, card, and detail controls unchanged
+- [x] Remove Google OAuth requirements that are no longer needed for local photos
+- [x] Run targeted checks and verify no unrelated behavior changed
+- [ ] Save checkpoint with only the local photo storage change
+
+> Scope note: Do not change meal planning, recipe management, navigation, typography, or other behavior beyond the photo storage backend.

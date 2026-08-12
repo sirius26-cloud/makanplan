@@ -3,8 +3,9 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 
 import { RecipePhotoView } from "@/components/recipe-photo";
-import { useGoogleDriveRecipePhoto } from "@/hooks/use-google-drive-recipe-photo";
+import { deleteLocalRecipePhoto, saveLocalRecipePhoto } from "@/lib/localRecipePhotos";
 import type { RecipePhoto } from "@/lib/types";
+import { useState } from "react";
 
 type RecipePhotoPickerProps = {
   photo?: RecipePhoto;
@@ -14,7 +15,7 @@ type RecipePhotoPickerProps = {
 };
 
 export function RecipePhotoPicker({ photo, recipeName, onChange, compact = false }: RecipePhotoPickerProps) {
-  const { uploadPhoto, isUploading } = useGoogleDriveRecipePhoto();
+  const [isSaving, setIsSaving] = useState(false);
 
   const selectPhoto = async (source: "library" | "camera") => {
     try {
@@ -35,12 +36,13 @@ export function RecipePhotoPicker({ photo, recipeName, onChange, compact = false
           });
       if (result.canceled || !result.assets[0]) return;
 
-      const uploaded = await uploadPhoto({
+      setIsSaving(true);
+      const savedPhoto = await saveLocalRecipePhoto({
         uri: result.assets[0].uri,
         mimeType: result.assets[0].mimeType,
         recipeName,
       });
-      onChange(uploaded);
+      onChange(savedPhoto);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       Alert.alert(
@@ -48,12 +50,14 @@ export function RecipePhotoPicker({ photo, recipeName, onChange, compact = false
         error instanceof Error ? error.message : "Please try again.",
       );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const startPhotoSelection = () => {
-    if (Platform.OS !== "ios") {
-      Alert.alert("iOS feature", "Recipe photo uploads are available in the iOS app.");
+    if (Platform.OS === "web") {
+      Alert.alert("Mobile feature", "Local recipe photos are available in the mobile app.");
       return;
     }
     Alert.alert("Recipe photo", "Attach one photo to this recipe.", [
@@ -69,13 +73,25 @@ export function RecipePhotoPicker({ photo, recipeName, onChange, compact = false
   const removePhoto = () => {
     Alert.alert(
       "Remove recipe photo?",
-      "This removes the photo from this recipe. The original remains in your Google Drive.",
+      "This removes the saved photo from this recipe and this device.",
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Remove",
           style: "destructive",
-          onPress: () => onChange(undefined),
+          onPress: () => {
+            void (async () => {
+              try {
+                setIsSaving(true);
+                await deleteLocalRecipePhoto(photo);
+                onChange(undefined);
+              } catch {
+                Alert.alert("Could not remove photo", "Please try again.");
+              } finally {
+                setIsSaving(false);
+              }
+            })();
+          },
         },
       ],
     );
@@ -84,22 +100,22 @@ export function RecipePhotoPicker({ photo, recipeName, onChange, compact = false
   return (
     <View style={styles.section}>
       <Text style={styles.title}>Recipe Photo</Text>
-      <Text style={styles.helper}>Optional. Stored privately in your connected Google Drive.</Text>
+      <Text style={styles.helper}>Optional. Saved privately on this device.</Text>
       {!compact && (photo ? <RecipePhotoView photo={photo} variant="editor" /> : <View style={styles.placeholder}><Text style={styles.placeholderText}>No photo attached</Text></View>)}
       <Pressable
         accessibilityRole="button"
-        disabled={isUploading}
+        disabled={isSaving}
         onPress={startPhotoSelection}
-        style={({ pressed }) => [styles.primaryButton, (pressed || isUploading) && styles.pressed]}
+        style={({ pressed }) => [styles.primaryButton, (pressed || isSaving) && styles.pressed]}
       >
-        <Text style={styles.primaryButtonText}>{isUploading ? "Uploading to Google Drive…" : photo ? "Replace Photo" : "Add Photo"}</Text>
+        <Text style={styles.primaryButtonText}>{isSaving ? "Saving Photo…" : photo ? "Replace Photo" : "Add Photo"}</Text>
       </Pressable>
       {photo ? (
         <Pressable
           accessibilityRole="button"
-          disabled={isUploading}
+          disabled={isSaving}
           onPress={removePhoto}
-          style={({ pressed }) => [styles.removeButton, (pressed || isUploading) && styles.pressed]}
+          style={({ pressed }) => [styles.removeButton, (pressed || isSaving) && styles.pressed]}
         >
           <Text style={styles.removeButtonText}>Remove from Recipe</Text>
         </Pressable>

@@ -25,10 +25,6 @@ const bundleId =
 // e.g., "space.manus.my.app.t20240115103045" -> "manus20240115103045"
 const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
 const schemeFromBundleId = `manus${timestamp}`;
-const googleIOSClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
-const googleDriveRedirectScheme = googleIOSClientId
-  ? `com.googleusercontent.apps.${googleIOSClientId.replace(".apps.googleusercontent.com", "")}`
-  : bundleId;
 
 const env = {
   // App branding - update these values directly (do not use env vars)
@@ -48,7 +44,7 @@ const config: ExpoConfig = {
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
-  scheme: [env.scheme, env.iosBundleId, googleDriveRedirectScheme],
+  scheme: env.scheme,
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   ios: {
