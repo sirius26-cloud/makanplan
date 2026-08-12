@@ -10,9 +10,10 @@ type RecipePhotoPickerProps = {
   photo?: RecipePhoto;
   recipeName: string;
   onChange: (photo: RecipePhoto | undefined) => void;
+  compact?: boolean;
 };
 
-export function RecipePhotoPicker({ photo, recipeName, onChange }: RecipePhotoPickerProps) {
+export function RecipePhotoPicker({ photo, recipeName, onChange, compact = false }: RecipePhotoPickerProps) {
   const { uploadPhoto, isUploading } = useGoogleDriveRecipePhoto();
 
   const selectPhoto = async (source: "library" | "camera") => {
@@ -84,7 +85,7 @@ export function RecipePhotoPicker({ photo, recipeName, onChange }: RecipePhotoPi
     <View style={styles.section}>
       <Text style={styles.title}>Recipe Photo</Text>
       <Text style={styles.helper}>Optional. Stored privately in your connected Google Drive.</Text>
-      {photo ? <RecipePhotoView photo={photo} variant="editor" /> : <View style={styles.placeholder}><Text style={styles.placeholderText}>No photo attached</Text></View>}
+      {!compact && (photo ? <RecipePhotoView photo={photo} variant="editor" /> : <View style={styles.placeholder}><Text style={styles.placeholderText}>No photo attached</Text></View>)}
       <Pressable
         accessibilityRole="button"
         disabled={isUploading}

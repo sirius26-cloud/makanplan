@@ -22,6 +22,16 @@ module.exports = {
   theme: {
     extend: {
       colors: tailwindColors,
+      fontSize: {
+        xs: ["0.8125rem", { lineHeight: "1.1rem" }],
+        sm: ["0.9375rem", { lineHeight: "1.3rem" }],
+        base: ["1.0625rem", { lineHeight: "1.5rem" }],
+        lg: ["1.1875rem", { lineHeight: "1.65rem" }],
+        xl: ["1.3125rem", { lineHeight: "1.8rem" }],
+        "2xl": ["1.5625rem", { lineHeight: "2rem" }],
+        "3xl": ["1.9375rem", { lineHeight: "2.4rem" }],
+        "4xl": ["2.3125rem", { lineHeight: "2.75rem" }],
+      },
     },
   },
   plugins: [

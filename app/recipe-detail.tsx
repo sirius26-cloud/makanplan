@@ -4,9 +4,11 @@ import { useRecipes } from '@/lib/RecipeContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { RecipePhotoView } from '@/components/recipe-photo';
+import { RecipePhotoPicker } from '@/components/recipe-photo-picker';
+import type { RecipePhoto } from '@/lib/types';
 
 export default function RecipeDetailScreen() {
-  const { recipes, toggleFavourite, toggleStaple, deleteRecipe } = useRecipes();
+  const { recipes, toggleFavourite, toggleStaple, deleteRecipe, updateRecipe } = useRecipes();
   const { recipeId } = useLocalSearchParams();
   const router = useRouter();
 
@@ -68,6 +70,10 @@ export default function RecipeDetailScreen() {
     router.back();
   };
 
+  const handlePhotoChange = (photo: RecipePhoto | undefined) => {
+    void updateRecipe({ ...recipe, photo });
+  };
+
   return (
     <ScreenContainer className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1">
@@ -81,6 +87,13 @@ export default function RecipeDetailScreen() {
           </View>
 
           <RecipePhotoView photo={recipe.photo} variant="detail" />
+
+          <RecipePhotoPicker
+            compact
+            photo={recipe.photo}
+            recipeName={recipe.name}
+            onChange={handlePhotoChange}
+          />
 
           {/* Recipe Info */}
           <View className="gap-3 p-4 bg-surface rounded-lg border border-border">

@@ -117,3 +117,12 @@
 - [ ] Save checkpoint with only scoped changes
 
 > Scope note: Do not refactor or modify unrelated features, navigation, storage behavior, or styling beyond what is necessary for these requested changes.
+
+## Phase 16: Scoped Typography and Existing-Recipe Photo Import
+- [x] Inspect current font sizing and existing-recipe photo access points
+- [x] Increase font sizes modestly without changing layouts or unrelated styling
+- [x] Add a direct photo import action for existing recipes using the current Google Drive photo workflow
+- [x] Run targeted checks and verify no unrelated behavior changed
+- [ ] Save checkpoint with only scoped changes
+
+> Scope note: Do not change any feature behavior other than font sizing and existing-recipe photo import access.
