@@ -29,6 +29,19 @@ function weightedRandomSelect<T extends { isFavourite?: boolean; isStaple?: bool
 }
 
 /**
+ * Decide the format independently each time a day is generated or reshuffled.
+ * Rice/noodle days remain optional, but no calendar position is locked to a format.
+ */
+function chooseMealFormat(
+  includeRiceDays: boolean,
+  hasOnePotOptions: boolean,
+): 'one-pot' | 'main-veg' {
+  return includeRiceDays && hasOnePotOptions && Math.random() < 1 / 3
+    ? 'one-pot'
+    : 'main-veg';
+}
+
+/**
  * Generate a weekly meal plan
  */
 export function generateWeeklyPlan(
@@ -70,18 +83,10 @@ export function generateWeeklyPlan(
   const usedVegSides: Set<string> = new Set(); // Track used veg sides to rotate
 
   for (let day = 1; day <= numDays; day++) {
-    let main: Recipe;
-
-    // Decide if this should be a rice/noodle day
-    const isRiceDay =
-      includeRiceDays &&
-      (numDays === 5 ? day === 3 : numDays === 6 ? day === 3 || day === 6 : day === 3 || day === 6);
-
-    if (isRiceDay && riceNoodleMains.length > 0) {
-      main = weightedRandomSelect(riceNoodleMains);
-    } else {
-      main = weightedRandomSelect(mains);
-    }
+    const format = chooseMealFormat(includeRiceDays, riceNoodleMains.length > 0);
+    const main = weightedRandomSelect(
+      format === 'one-pot' ? riceNoodleMains : mains,
+    );
 
     // Determine if we need a veg side
     let vegSide: Recipe | null = null;
@@ -104,7 +109,6 @@ export function generateWeeklyPlan(
       }
     }
 
-    const format = main.type === 'rice_noodle_one_pot' ? 'one-pot' : 'main-veg';
     days.push({
       day,
       main,
@@ -161,15 +165,10 @@ export function regenerateMealDay(
   const currentMain = currentPlan.days[dayIndex]?.main;
   const availableMains = mains.filter((m) => m.id !== currentMain?.id);
   const mainToUse = availableMains.length > 0 ? availableMains : mains;
-
-  const isRiceDay =
-    currentPlan.includeRiceDays &&
-    (currentPlan.days.length === 5 ? dayIndex === 2 : currentPlan.days.length === 6 ? dayIndex === 2 || dayIndex === 5 : dayIndex === 2 || dayIndex === 5);
-
-  const main =
-    isRiceDay && riceNoodleMains.length > 0
-      ? weightedRandomSelect(riceNoodleMains)
-      : weightedRandomSelect(mainToUse);
+  const availableOnePots = riceNoodleMains.filter((main) => main.id !== currentMain?.id);
+  const onePotToUse = availableOnePots.length > 0 ? availableOnePots : riceNoodleMains;
+  const format = chooseMealFormat(currentPlan.includeRiceDays, onePotToUse.length > 0);
+  const main = weightedRandomSelect(format === 'one-pot' ? onePotToUse : mainToUse);
 
   let vegSide: Recipe | null = null;
   if (!main.hasVeg && vegSides.length > 0) {
@@ -179,7 +178,6 @@ export function regenerateMealDay(
     vegSide = weightedRandomSelect(vegToUse);
   }
 
-  const format = main.type === 'rice_noodle_one_pot' ? 'one-pot' : 'main-veg';
   return {
     day: dayIndex + 1,
     main,

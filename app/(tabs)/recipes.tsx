@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useState, useMemo } from 'react';
 import { ProteinType, RecipeType } from '@/lib/types';
 import * as Haptics from 'expo-haptics';
+import { RecipePhotoView } from '@/components/recipe-photo';
 
 const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu'];
 const RECIPE_TYPES: RecipeType[] = ['protein_main', 'veg_side', 'rice_noodle_one_pot'];
@@ -203,45 +204,48 @@ export default function RecipesScreen() {
                 ]}
                 className="mb-3 p-4 bg-surface rounded-lg border border-border"
               >
-                <View className="gap-2">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="flex-1 text-base font-semibold text-foreground">
-                      {item.name}
-                    </Text>
-                    <View className="flex-row gap-1">
-                      <Pressable
-                        onPress={() => handleToggleFavourite(item.id)}
-                        style={({ pressed }) => [
-                          { transform: [{ scale: pressed ? 0.9 : 1 }] },
-                        ]}
-                      >
-                        <Text className="text-lg">{item.isFavourite ? '❤️' : '🤍'}</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => handleToggleStaple(item.id)}
-                        style={({ pressed }) => [
-                          { transform: [{ scale: pressed ? 0.9 : 1 }] },
-                        ]}
-                      >
-                        <Text className="text-lg">{item.isStaple ? '⭐' : '☆'}</Text>
-                      </Pressable>
+                <View className="flex-row gap-3">
+                  <RecipePhotoView photo={item.photo} variant="thumbnail" />
+                  <View className="flex-1 gap-2">
+                    <View className="flex-row items-center justify-between">
+                      <Text className="flex-1 text-base font-semibold text-foreground">
+                        {item.name}
+                      </Text>
+                      <View className="flex-row gap-1">
+                        <Pressable
+                          onPress={() => handleToggleFavourite(item.id)}
+                          style={({ pressed }) => [
+                            { transform: [{ scale: pressed ? 0.9 : 1 }] },
+                          ]}
+                        >
+                          <Text className="text-lg">{item.isFavourite ? '❤️' : '🤍'}</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleToggleStaple(item.id)}
+                          style={({ pressed }) => [
+                            { transform: [{ scale: pressed ? 0.9 : 1 }] },
+                          ]}
+                        >
+                          <Text className="text-lg">{item.isStaple ? '⭐' : '☆'}</Text>
+                        </Pressable>
+                      </View>
                     </View>
-                  </View>
 
-                  <View className="flex-row gap-2 flex-wrap">
-                    <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
-                      {item.type === 'protein_main'
-                        ? 'Main'
-                        : item.type === 'veg_side'
-                          ? 'Veg'
-                          : 'Rice/Noodle'}
-                    </Text>
-                    <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded capitalize">
-                      {item.protein}
-                    </Text>
-                    <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
-                      {item.cuisineType}
-                    </Text>
+                    <View className="flex-row gap-2 flex-wrap">
+                      <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+                        {item.type === 'protein_main'
+                          ? 'Main'
+                          : item.type === 'veg_side'
+                            ? 'Veg'
+                            : 'Rice/Noodle'}
+                      </Text>
+                      <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded capitalize">
+                        {item.protein}
+                      </Text>
+                      <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+                        {item.cuisineType}
+                      </Text>
+                    </View>
                   </View>
                 </View>
               </Pressable>

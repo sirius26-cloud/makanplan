@@ -103,3 +103,17 @@
 - [ ] Test recipe persistence on publish
 - [ ] Create final checkpoint
 - [ ] Deliver app to user
+
+
+## Phase 15: Scoped Recipe Photos, One-Pot Fix, and 44-Recipe Master Seed
+- [x] Confirm photo storage approach and persistence expectations with user
+- [x] Inspect and configure the required Google Drive integration
+- [x] Add optional one-photo-per-recipe field and Google Drive upload flow
+- [x] Show recipe photos on recipe cards and recipe detail; support replace/remove
+- [x] Bundle the attached 44-recipe JSON as the master initial recipe list
+- [x] Fix weekly generation so each day independently chooses one-pot or main+veg
+- [x] Fix normal single-day reshuffle so it can choose either format
+- [x] Run targeted tests and verify no unrelated behavior changed
+- [ ] Save checkpoint with only scoped changes
+
+> Scope note: Do not refactor or modify unrelated features, navigation, storage behavior, or styling beyond what is necessary for these requested changes.

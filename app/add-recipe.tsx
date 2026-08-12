@@ -6,6 +6,8 @@ import { useState, useEffect } from 'react';
 import { Recipe, RecipeType, ProteinType } from '@/lib/types';
 import * as Haptics from 'expo-haptics';
 import { ParsedRecipe } from '@/lib/recipeImport';
+import { RecipePhotoPicker } from '@/components/recipe-photo-picker';
+import type { RecipePhoto } from '@/lib/types';
 
 const RECIPE_TYPES: RecipeType[] = ['protein_main', 'veg_side', 'rice_noodle_one_pot'];
 const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu'];
@@ -31,6 +33,7 @@ export default function AddRecipeScreen() {
   const [spiceLevel, setSpiceLevel] = useState<typeof SPICE_LEVELS[number]>('light');
   const [isFavourite, setIsFavourite] = useState(false);
   const [isStaple, setIsStaple] = useState(false);
+  const [photo, setPhoto] = useState<RecipePhoto | undefined>();
 
   // Load imported recipe if provided
   useEffect(() => {
@@ -87,6 +90,7 @@ export default function AddRecipeScreen() {
         servings: parseInt(servings) || 4,
         cuisineType: cuisine,
         spiceLevel,
+        photo,
         createdAt: Date.now(),
       };
 
@@ -142,6 +146,12 @@ export default function AddRecipeScreen() {
               className="p-3 bg-surface border border-border rounded-lg text-foreground text-base"
             />
           </View>
+
+          <RecipePhotoPicker
+            photo={photo}
+            recipeName={name.trim() || 'recipe'}
+            onChange={setPhoto}
+          />
 
           {/* Recipe Type */}
           <View className="gap-2">

@@ -5,6 +5,12 @@
 export type RecipeType = 'protein_main' | 'veg_side' | 'rice_noodle_one_pot';
 export type ProteinType = 'chicken' | 'fish' | 'beef' | 'seafood' | 'tofu';
 
+export interface RecipePhoto {
+  driveFileId: string;
+  mimeType: string;
+  uploadedAt: number;
+}
+
 export interface Recipe {
   id: string;
   name: string;
@@ -19,6 +25,7 @@ export interface Recipe {
   servings: number; // Default servings
   cuisineType: 'Japanese' | 'Thai' | 'Cantonese' | 'Vietnamese' | 'Western' | 'Mixed' | 'Taiwanese';
   spiceLevel: 'light' | 'light-medium' | 'medium'; // User prefers light/clean dinners
+  photo?: RecipePhoto; // Optional photo stored in the user's Google Drive
   createdAt: number; // Timestamp
 }
 

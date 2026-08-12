@@ -3,6 +3,7 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { RecipePhotoView } from '@/components/recipe-photo';
 
 export default function RecipeDetailScreen() {
   const { recipes, toggleFavourite, toggleStaple, deleteRecipe } = useRecipes();
@@ -78,6 +79,8 @@ export default function RecipeDetailScreen() {
             </Pressable>
             <Text className="text-3xl font-bold text-foreground">{recipe.name}</Text>
           </View>
+
+          <RecipePhotoView photo={recipe.photo} variant="detail" />
 
           {/* Recipe Info */}
           <View className="gap-3 p-4 bg-surface rounded-lg border border-border">
