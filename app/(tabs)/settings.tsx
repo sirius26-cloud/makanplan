@@ -7,6 +7,11 @@ import { exportRecipesAsJSON, importRecipesFromJSON } from '@/lib/recipeBackup';
 import { getCloudBackupConfig, disconnectCloudBackup } from '@/lib/cloudBackup';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import {
+  exportFullRecipeBackup,
+  parseFullRecipeBackup,
+  restoreFullBackupPhotos,
+} from '@/lib/fullRecipeBackup';
 
 export default function SettingsScreen() {
   const { settings, updateSettings, recipes, replaceAllRecipes, mergeImportedRecipes, updateDietaryFilters, getDietaryFilters } = useRecipes();
@@ -17,6 +22,8 @@ export default function SettingsScreen() {
   const [newRestrictionName, setNewRestrictionName] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isFullExporting, setIsFullExporting] = useState(false);
+  const [isFullImporting, setIsFullImporting] = useState(false);
   const [cloudConfig, setCloudConfig] = useState<any>(null);
 
   useEffect(() => {
@@ -209,6 +216,72 @@ export default function SettingsScreen() {
         },
       ],
     );
+  };
+
+  const handleExportFullBackup = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setIsFullExporting(true);
+      await exportFullRecipeBackup(recipes);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      Alert.alert('Export Failed', error instanceof Error ? error.message : 'Please try again.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsFullExporting(false);
+    }
+  };
+
+  const handleImportFullBackup = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setIsFullImporting(true);
+
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/zip',
+        copyToCacheDirectory: true,
+      });
+
+      if (!result || result.canceled || !result.assets?.[0]) {
+        Alert.alert('Import Cancelled', 'No file was selected.');
+        return;
+      }
+
+      const zipBase64 = await FileSystem.readAsStringAsync(result.assets[0].uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const { recipes: importedRecipes, photoFiles } = await parseFullRecipeBackup(zipBase64);
+
+      Alert.alert(
+        'Restore Full Backup',
+        `Found ${importedRecipes.length} recipes. Replace your current library?`,
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => setIsFullImporting(false) },
+          {
+            text: 'Replace All',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const recipesWithPhotos = await restoreFullBackupPhotos(importedRecipes, photoFiles);
+                await replaceAllRecipes(recipesWithPhotos);
+                Alert.alert('Restore Complete', `${recipesWithPhotos.length} recipes restored.`);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              } catch {
+                Alert.alert('Error', 'Failed to restore backup.');
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              } finally {
+                setIsFullImporting(false);
+              }
+            },
+          },
+        ],
+      );
+    } catch (error) {
+      Alert.alert('Import Failed', error instanceof Error ? error.message : 'Please check the file.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setIsFullImporting(false);
+    }
   };
 
   return (
@@ -431,7 +504,7 @@ export default function SettingsScreen() {
               </Pressable>
             </View>
 
-            {/* Cloud Backup Status */}
+          {/* Cloud Backup Status */}
             {cloudConfig ? (
               <View className="gap-2">
                 <Text className="text-base font-semibold text-foreground">Option 2: Cloud Backup</Text>
@@ -453,6 +526,48 @@ export default function SettingsScreen() {
                 </View>
               </View>
             )}
+          </View>
+
+          {/* Full Backup (Recipes + Photos) */}
+          <View className="gap-2">
+            <Text className="text-base font-semibold text-foreground">Full Backup (Recipes + Photos)</Text>
+            <Text className="text-sm text-muted">Exports a ZIP file containing all recipes and any local recipe photos.</Text>
+            <Pressable
+              onPress={handleExportFullBackup}
+              disabled={isFullExporting}
+              style={({ pressed }) => [{
+                opacity: pressed && !isFullExporting ? 0.8 : 1,
+                backgroundColor: '#E85D2A',
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                alignItems: 'center',
+              }]}
+            >
+              {isFullExporting ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-semibold text-base">📦 Export Full Backup (ZIP)</Text>
+              )}
+            </Pressable>
+            <Pressable
+              onPress={handleImportFullBackup}
+              disabled={isFullImporting}
+              style={({ pressed }) => [{
+                opacity: pressed && !isFullImporting ? 0.8 : 1,
+                backgroundColor: '#2D5016',
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                alignItems: 'center',
+              }]}
+            >
+              {isFullImporting ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-semibold text-base">📦 Restore Full Backup (ZIP)</Text>
+              )}
+            </Pressable>
           </View>
 
           {/* Save Button */}

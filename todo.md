@@ -141,6 +141,16 @@
 - [x] Keep existing recipe photo add, replace, remove, card, and detail controls unchanged
 - [x] Remove Google OAuth requirements that are no longer needed for local photos
 - [x] Run targeted checks and verify no unrelated behavior changed
-- [ ] Save checkpoint with only the local photo storage change
+- [x] Save checkpoint with only the local photo storage change
 
 > Scope note: Do not change meal planning, recipe management, navigation, typography, or other behavior beyond the photo storage backend.
+
+## Phase 19: Scoped ZIP Full Backup (Recipes + Photos)
+- [x] Inspect ZIP library options and current Settings backup section
+- [x] Implement ZIP export: bundle recipes.json and photos folder, share via system sheet
+- [x] Implement ZIP import: extract recipes.json and restore photo files, merge or replace
+- [x] Add Full Backup and Restore buttons to Settings without touching the existing JSON section
+- [x] Run targeted tests and verify no unrelated behavior changed
+- [ ] Save checkpoint with only the scoped ZIP backup change
+
+> Scope note: Do not modify the existing recipe-only JSON export/import or any other feature.
