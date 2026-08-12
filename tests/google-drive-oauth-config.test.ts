@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { buildGoogleDriveRedirectUri } from "../lib/googleDriveRedirect";
+
 describe("Google Drive photo configuration", () => {
   it("has valid Google OAuth client IDs and reaches Google's OpenID configuration", async () => {
     const webClientId = process.env.EXPO_PUBLIC_GOOGLE_DRIVE_CLIENT_ID;
@@ -7,6 +9,9 @@ describe("Google Drive photo configuration", () => {
 
     expect(webClientId).toMatch(/^[0-9]+-[a-z0-9-]+\.apps\.googleusercontent\.com$/);
     expect(iOSClientId).toMatch(/^[0-9]+-[a-z0-9-]+\.apps\.googleusercontent\.com$/);
+    expect(buildGoogleDriveRedirectUri(iOSClientId)).toBe(
+      `com.googleusercontent.apps.${iOSClientId?.replace(".apps.googleusercontent.com", "")}:/oauth2redirect`,
+    );
 
     const response = await fetch(
       "https://accounts.google.com/.well-known/openid-configuration",

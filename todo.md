@@ -126,3 +126,11 @@
 - [ ] Save checkpoint with only scoped changes
 
 > Scope note: Do not change any feature behavior other than font sizing and existing-recipe photo import access.
+
+## Phase 17: Scoped Stable Google OAuth Redirect
+- [x] Inspect the current Google Drive redirect URI generation
+- [x] Force the iOS OAuth flow to use the stable client-scheme redirect URI
+- [x] Validate configuration and document the exact Google Cloud registration value
+- [ ] Save checkpoint with only the OAuth redirect fix
+
+> Scope note: Do not modify recipe, photo, navigation, or typography behavior beyond the redirect URI fix.

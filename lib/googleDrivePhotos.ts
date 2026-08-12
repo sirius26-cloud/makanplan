@@ -2,6 +2,7 @@ import * as AuthSession from "expo-auth-session";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
+import { buildGoogleDriveRedirectScheme, buildGoogleDriveRedirectUri } from "./googleDriveRedirect";
 import type { RecipePhoto } from "./types";
 
 const GOOGLE_DRIVE_TOKEN_KEY = "makanplan_google_drive_photo_session";
@@ -27,17 +28,11 @@ export function getGoogleDriveClientId(): string {
 }
 
 export function getGoogleDriveRedirectScheme(): string {
-  const clientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
-  return clientId
-    ? `com.googleusercontent.apps.${clientId.replace(".apps.googleusercontent.com", "")}`
-    : "com.app.makanplan";
+  return buildGoogleDriveRedirectScheme(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
 }
 
 export function getGoogleDriveRedirectUri(): string {
-  return AuthSession.makeRedirectUri({
-    scheme: getGoogleDriveRedirectScheme(),
-    path: "oauth2redirect",
-  });
+  return buildGoogleDriveRedirectUri(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
 }
 
 export function getGoogleDriveAuthConfig() {
