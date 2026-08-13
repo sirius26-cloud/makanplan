@@ -162,3 +162,8 @@
 - [x] Verify browser storage, photo, full backup, OAuth, and seed-data behavior on web
 - [x] Research Vercel deployment requirements and future update workflow
 - [x] Deliver the web export and Vercel assessment without changing app functionality
+
+## Phase 21: Vercel Deployment Configuration
+- [x] Add `vercel.json` for the Expo static web export
+- [x] Validate the Vercel configuration and output command
+- [x] Save a deployment-ready checkpoint and report the settings
