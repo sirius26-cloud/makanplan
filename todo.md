@@ -154,3 +154,11 @@
 - [ ] Save checkpoint with only the scoped ZIP backup change
 
 > Scope note: Do not modify the existing recipe-only JSON export/import or any other feature.
+
+## Phase 20: Web Export and Vercel Viability Assessment
+- [x] Remove obsolete Google Drive photo helper that causes unrelated TypeScript errors
+- [x] Inspect web configuration and dependencies for compatibility risks
+- [x] Run a production Expo web export and assess its output
+- [x] Verify browser storage, photo, full backup, OAuth, and seed-data behavior on web
+- [x] Research Vercel deployment requirements and future update workflow
+- [x] Deliver the web export and Vercel assessment without changing app functionality
