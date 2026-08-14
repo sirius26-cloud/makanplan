@@ -1,3 +1,63 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Web typography stays compact on phones and increases at tablet/desktop widths. */
+@media screen and (min-width: 768px) {
+  #root .text-xs {
+    font-size: 0.875rem !important;
+    line-height: 1.2rem !important;
+  }
+
+  #root .text-sm {
+    font-size: 1rem !important;
+    line-height: 1.4rem !important;
+  }
+
+  #root .text-base {
+    font-size: 1.125rem !important;
+    line-height: 1.6rem !important;
+  }
+
+  #root .text-lg {
+    font-size: 1.3125rem !important;
+    line-height: 1.8rem !important;
+  }
+
+  #root .text-xl {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+
+  #root .text-2xl {
+    font-size: 1.8125rem !important;
+    line-height: 2.3rem !important;
+  }
+
+  #root .text-3xl {
+    font-size: 2.25rem !important;
+    line-height: 2.8rem !important;
+  }
+
+  #root .text-4xl {
+    font-size: 2.625rem !important;
+    line-height: 3.15rem !important;
+  }
+}
+
+@media screen and (min-width: 1280px) {
+  #root .text-2xl {
+    font-size: 2rem !important;
+    line-height: 2.55rem !important;
+  }
+
+  #root .text-3xl {
+    font-size: 2.5rem !important;
+    line-height: 3.1rem !important;
+  }
+
+  #root .text-4xl {
+    font-size: 3rem !important;
+    line-height: 3.6rem !important;
+  }
+}

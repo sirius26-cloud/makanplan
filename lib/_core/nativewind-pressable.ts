@@ -1,5 +1,8 @@
-// NativeWind + Pressable: className can swallow onPress. Disable className mapping globally.
-import { Pressable } from "react-native";
+// Keep the native safeguard, but allow React Native Web to map Pressable className values.
+// Buttons and choice chips rely on this mapping for their visual styles in web exports.
+import { Platform, Pressable } from "react-native";
 import { remapProps } from "nativewind";
 
-remapProps(Pressable, { className: false });
+if (Platform.OS !== "web") {
+  remapProps(Pressable, { className: false });
+}

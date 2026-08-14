@@ -184,3 +184,10 @@
 - [x] Apply the smallest static-export configuration fix
 - [x] Verify the clean production export, TypeScript, and tests
 - [x] Push the fix to GitHub and document the root cause
+
+## Phase 25: Responsive Web Styling Fix
+- [x] Inspect exported CSS assets and the affected web-only control styling
+- [x] Restore the correct CSS pipeline for Vercel static output
+- [x] Add scoped responsive type scaling for desktop and mobile web viewports
+- [x] Validate the production export at desktop and mobile dimensions
+- [x] Push the styling fix to GitHub and report the deployment steps
