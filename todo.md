@@ -177,3 +177,10 @@
 - [x] Inspect local and GitHub branch divergence
 - [x] Push the pending Vercel checkpoint to GitHub
 - [x] Verify the remote commit and report synchronization
+
+## Phase 24: Vercel Static-Export Build Failure
+- [x] Reproduce the Vercel-equivalent clean dependency installation and isolate the environment difference
+- [x] Identify the Vercel dependency-install/cache path as the remaining failure surface; static output and app source are not implicated
+- [x] Apply the smallest static-export configuration fix
+- [x] Verify the clean production export, TypeScript, and tests
+- [ ] Push the fix to GitHub and document the root cause
