@@ -1,4 +1,4 @@
-import { View, type ViewProps } from "react-native";
+import { Platform, StyleSheet, View, type ViewProps } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 
 import { cn } from "@/lib/utils";
@@ -47,6 +47,8 @@ export function ScreenContainer({
   style,
   ...props
 }: ScreenContainerProps) {
+  const webFlexConstraint = Platform.OS === "web" ? styles.webFlexConstraint : undefined;
+
   return (
     <View
       className={cn(
@@ -54,15 +56,26 @@ export function ScreenContainer({
         "bg-background",
         containerClassName
       )}
+      style={webFlexConstraint}
       {...props}
     >
       <SafeAreaView
         edges={edges}
         className={cn("flex-1", safeAreaClassName)}
-        style={style}
+        style={[webFlexConstraint, style]}
       >
-        <View className={cn("flex-1", className)}>{children}</View>
+        <View className={cn("flex-1", className)} style={webFlexConstraint}>
+          {children}
+        </View>
       </SafeAreaView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  // Flex items default to min-height: auto on the web. Let child ScrollViews shrink
+  // to the viewport and own vertical scrolling instead of expanding past the tab bar.
+  webFlexConstraint: {
+    minHeight: 0,
+  },
+});

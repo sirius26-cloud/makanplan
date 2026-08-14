@@ -191,3 +191,10 @@
 - [x] Add scoped responsive type scaling for desktop and mobile web viewports
 - [x] Validate the production export at desktop and mobile dimensions
 - [x] Push the styling fix to GitHub and report the deployment steps
+
+## Phase 26: Mobile Portrait Scroll and Bottom Tabs
+- [x] Inspect portrait scroll containment and bottom-tab styling
+- [x] Restore mobile web scrolling and protect content from tab-bar overlap
+- [x] Standardize Home, Recipes, and Settings tab icons and labels
+- [x] Validate generated-plan scrolling in portrait and landscape phone viewports
+- [x] Push the verified mobile web fix to GitHub and report deployment steps
