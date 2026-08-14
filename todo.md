@@ -198,3 +198,9 @@
 - [x] Standardize Home, Recipes, and Settings tab icons and labels
 - [x] Validate generated-plan scrolling in portrait and landscape phone viewports
 - [x] Push the verified mobile web fix to GitHub and report deployment steps
+
+## Phase 27: Screen-Specific Mobile Portrait Scroll Fix
+- [x] Inspect weekly-plan and recipe-library scroll ownership at phone width
+- [x] Apply the smallest mobile web scroll fixes to the two affected screens
+- [x] Validate both screens at phone portrait width and production export
+- [x] Push the verified fix to GitHub and report the result
