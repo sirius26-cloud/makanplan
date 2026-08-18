@@ -16,7 +16,6 @@ type RecipePhotoPickerProps = {
 
 export function RecipePhotoPicker({ photo, recipeName, onChange, compact = false }: RecipePhotoPickerProps) {
   const [isSaving, setIsSaving] = useState(false);
-  const isWeb = Platform.OS === "web";
 
   const selectPhoto = async (source: "library" | "camera") => {
     try {
@@ -105,13 +104,11 @@ export function RecipePhotoPicker({ photo, recipeName, onChange, compact = false
       {!compact && (photo ? <RecipePhotoView photo={photo} variant="editor" /> : <View style={styles.placeholder}><Text style={styles.placeholderText}>No photo attached</Text></View>)}
       <Pressable
         accessibilityRole="button"
-        disabled={isSaving || isWeb}
-        onPress={isWeb ? undefined : startPhotoSelection}
-        style={({ pressed }) => [styles.primaryButton, (pressed || isSaving) && styles.pressed, isWeb && styles.webDisabledButton]}
+        disabled={isSaving}
+        onPress={startPhotoSelection}
+        style={({ pressed }) => [styles.primaryButton, (pressed || isSaving) && styles.pressed]}
       >
-        <Text style={styles.primaryButtonText}>
-          {isWeb ? "Photos are available in the mobile app" : isSaving ? "Saving Photo…" : photo ? "Replace Photo" : "Add Photo"}
-        </Text>
+        <Text style={styles.primaryButtonText}>{isSaving ? "Saving Photo…" : photo ? "Replace Photo" : "Add Photo"}</Text>
       </Pressable>
       {photo ? (
         <Pressable
@@ -135,7 +132,6 @@ const styles = StyleSheet.create({
   placeholderText: { color: "#687076", fontSize: 14 },
   primaryButton: { minHeight: 46, borderRadius: 10, backgroundColor: "#E85D2A", alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
   primaryButtonText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
-  webDisabledButton: { backgroundColor: "#7F8C8D", opacity: 0.72 },
   removeButton: { minHeight: 40, borderRadius: 10, borderWidth: 1, borderColor: "#E74C3C", alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
   removeButtonText: { color: "#E74C3C", fontWeight: "600", fontSize: 15 },
   pressed: { opacity: 0.72, transform: [{ scale: 0.98 }] },
