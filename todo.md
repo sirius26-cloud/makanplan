@@ -204,3 +204,9 @@
 - [x] Apply the smallest mobile web scroll fixes to the two affected screens
 - [x] Validate both screens at phone portrait width and production export
 - [x] Push the verified fix to GitHub and report the result
+
+## Phase 28: iOS Browser Scroll Regression
+- [x] Inspect iOS-specific vertical and horizontal overflow behavior on Home and Recipes
+- [x] Apply the smallest touch-scroll-compatible web fix to Home and Recipes only
+- [x] Validate the touch-scroll structure and production export
+- [x] Push the verified iOS scroll correction to GitHub and report the result

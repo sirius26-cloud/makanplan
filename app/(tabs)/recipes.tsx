@@ -56,6 +56,7 @@ export default function RecipesScreen() {
   return (
     <ScreenContainer className="flex-1 bg-background">
       <ScrollView
+        nativeID="recipes-scroll-region"
         className="flex-1"
         style={Platform.OS === 'web' ? styles.webScrollRegion : undefined}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}

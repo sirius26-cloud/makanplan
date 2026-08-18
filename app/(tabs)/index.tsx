@@ -56,6 +56,7 @@ export default function HomeScreen() {
   return (
     <ScreenContainer className="flex-1 bg-background">
       <ScrollView
+        nativeID="home-scroll-region"
         className="flex-1"
         style={Platform.OS === 'web' ? styles.webScrollRegion : undefined}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
