@@ -204,3 +204,8 @@
 - [x] Apply the smallest mobile web scroll fixes to the two affected screens
 - [x] Validate both screens at phone portrait width and production export
 - [x] Push the verified fix to GitHub and report the result
+
+## Phase 30: Secondary Toggle Contrast Restoration
+- [x] Reapply the missing `secondary` theme token and declaration only
+- [x] Verify the day-format toggle renders with a dark-green background and white text
+- [x] Save, push, and report the exact Vercel commit hash
