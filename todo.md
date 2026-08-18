@@ -209,3 +209,8 @@
 - [x] Reapply the missing `secondary` theme token and declaration only
 - [x] Verify the day-format toggle renders with a dark-green background and white text
 - [x] Save, push, and report the exact Vercel commit hash
+
+## Phase 31: Home and Recipes Portrait Scroll Realignment
+- [x] Compare Home and Recipes scroll ownership with the working Settings tab
+- [x] Replace only the bounded inner-scroll workarounds with the Settings ScrollView structure
+- [x] Validate portrait behavior, preserve the secondary token, and push the exact Vercel commit

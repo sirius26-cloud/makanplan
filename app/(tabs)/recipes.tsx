@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, Pressable, FlatList, TextInput, ActivityIndicator, Platform, StyleSheet } from 'react-native';
+import { ScrollView, Text, View, Pressable, FlatList, TextInput, ActivityIndicator } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useRouter } from 'expo-router';
@@ -55,11 +55,7 @@ export default function RecipesScreen() {
 
   return (
     <ScreenContainer className="flex-1 bg-background">
-      <ScrollView
-        className="flex-1"
-        style={Platform.OS === 'web' ? styles.webScrollRegion : undefined}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-      >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View className="p-4 gap-4">
           {/* Header */}
           <View className="gap-2">
@@ -266,14 +262,3 @@ export default function RecipesScreen() {
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  // On mobile web, make this screen's ScrollView the shrinkable flex child that
-  // owns vertical scrolling above the tab navigator.
-  webScrollRegion: {
-    flexBasis: 0,
-    flexGrow: 1,
-    flexShrink: 1,
-    minHeight: 0,
-  },
-});
