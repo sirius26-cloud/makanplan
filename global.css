@@ -61,19 +61,3 @@
     line-height: 3.6rem !important;
   }
 }
-
-/*
- * iOS WebKit can let a nested React Native Web ScrollView compete for a
- * horizontal gesture. These two full-screen tab regions are vertical-only:
- * lock touch handling to the y-axis and remove the redundant x overflow.
- */
-@media screen and (max-width: 767px) {
-  #home-scroll-region,
-  #recipes-scroll-region {
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    touch-action: pan-y pinch-zoom;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: none;
-  }
-}

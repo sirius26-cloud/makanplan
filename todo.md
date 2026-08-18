@@ -210,3 +210,15 @@
 - [x] Apply the smallest touch-scroll-compatible web fix to Home and Recipes only
 - [x] Validate the touch-scroll structure and production export
 - [x] Push the verified iOS scroll correction to GitHub and report the result
+
+## Phase 29: Confirmed Regression Diagnosis and Scoped Fixes
+- [x] Compare the Home, Recipes, and working Settings scroll structures to establish the actual iOS root cause
+- [x] Inspect why the existing local-photo action no longer responds to taps
+- [x] Trace the NativeWind action-button text-color regression, including the day-format toggle
+- [x] Present the confirmed scroll diagnosis and await approval before modifying behavior
+- [x] Align Home and Recipes scrolling with the working Settings structure
+- [x] Define the missing secondary token for reliable action-button contrast
+- [x] Make the web photo control clearly mobile-only without changing native photo behavior
+- [x] Confirm existing recipe-name search already meets the requested feature
+- [x] Test real mobile-width interactions, static export, and GitHub synchronization
+- [x] Provide the exact changed-file list and reasons
