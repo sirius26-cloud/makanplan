@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, Pressable, FlatList, TextInput, ActivityIndicator } from 'react-native';
+import { ScrollView, Text, View, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useRouter } from 'expo-router';
@@ -191,66 +191,67 @@ export default function RecipesScreen() {
           </View>
 
           {/* Recipes List */}
-          <FlatList
-            data={filteredRecipes}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => handleRecipePress(item.id)}
-                style={({ pressed }) => [
-                  { transform: [{ scale: pressed ? 0.98 : 1 }] },
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}
-                className="mb-3 p-4 bg-surface rounded-lg border border-border"
-              >
-                <View className="flex-row gap-3">
-                  <RecipePhotoView photo={item.photo} variant="thumbnail" />
-                  <View className="flex-1 gap-2">
-                    <View className="flex-row items-center justify-between">
-                      <Text className="flex-1 text-base font-semibold text-foreground">
-                        {item.name}
-                      </Text>
-                      <View className="flex-row gap-1">
-                        <Pressable
-                          onPress={() => handleToggleFavourite(item.id)}
-                          style={({ pressed }) => [
-                            { transform: [{ scale: pressed ? 0.9 : 1 }] },
-                          ]}
-                        >
-                          <Text className="text-lg">{item.isFavourite ? '❤️' : '🤍'}</Text>
-                        </Pressable>
-                        <Pressable
-                          onPress={() => handleToggleStaple(item.id)}
-                          style={({ pressed }) => [
-                            { transform: [{ scale: pressed ? 0.9 : 1 }] },
-                          ]}
-                        >
-                          <Text className="text-lg">{item.isStaple ? '⭐' : '☆'}</Text>
-                        </Pressable>
-                      </View>
-                    </View>
-
-                    <View className="flex-row gap-2 flex-wrap">
-                      <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
-                        {item.type === 'protein_main'
-                          ? 'Main'
-                          : item.type === 'veg_side'
-                            ? 'Veg'
-                            : 'Rice/Noodle'}
-                      </Text>
-                      <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded capitalize">
-                        {item.protein}
-                      </Text>
-                      <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
-                        {item.cuisineType}
-                      </Text>
+          {filteredRecipes.map((item) => (
+            <Pressable
+              key={item.id}
+              onPress={() => handleRecipePress(item.id)}
+              style={({ pressed }) => [
+                { transform: [{ scale: pressed ? 0.98 : 1 }] },
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+              className="mb-3 p-4 bg-surface rounded-lg border border-border"
+            >
+              <View className="flex-row gap-3">
+                <RecipePhotoView photo={item.photo} variant="thumbnail" />
+                <View className="flex-1 gap-2">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="flex-1 text-base font-semibold text-foreground">
+                      {item.name}
+                    </Text>
+                    <View className="flex-row gap-1">
+                      <Pressable
+                        onPress={() => handleToggleFavourite(item.id)}
+                        style={({ pressed }) => [
+                          { transform: [{ scale: pressed ? 0.9 : 1 }] },
+                        ]}
+                      >
+                        <Text className="text-lg">{item.isFavourite ? '❤️' : '🤍'}</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleToggleStaple(item.id)}
+                        style={({ pressed }) => [
+                          { transform: [{ scale: pressed ? 0.9 : 1 }] },
+                        ]}
+                      >
+                        <Text className="text-lg">{item.isStaple ? '⭐' : '☆'}</Text>
+                      </Pressable>
                     </View>
                   </View>
+
+                  <View className="flex-row gap-2 flex-wrap">
+                    <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+                      {item.type === 'protein_main'
+                        ? 'Main'
+                        : item.type === 'veg_side'
+                          ? 'Veg'
+                          : 'Rice/Noodle'}
+                    </Text>
+                    <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded capitalize">
+                      {item.protein}
+                    </Text>
+                    <Text className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+                      {item.cuisineType}
+                    </Text>
+                    {item.courseType && (
+                      <Text className="text-xs bg-secondary/20 text-secondary px-2 py-1 rounded">
+                        {item.courseType === 'dessert' ? '🍰 Dessert' : '🥣 Sauce'}
+                      </Text>
+                    )}
+                  </View>
                 </View>
-              </Pressable>
-            )}
-          />
+              </View>
+            </Pressable>
+          ))}
 
           {filteredRecipes.length === 0 && (
             <View className="items-center justify-center py-12">
