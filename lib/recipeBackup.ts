@@ -10,7 +10,6 @@ export async function exportRecipesAsJSON(recipes: Recipe[]): Promise<void> {
   try {
     const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const filename = `MakanPlan_Recipes_${timestamp}.json`;
-    const filepath = `${FileSystem.documentDirectory}${filename}`;
 
     // Create JSON with metadata
     const backup = {
@@ -19,9 +18,26 @@ export async function exportRecipesAsJSON(recipes: Recipe[]): Promise<void> {
       recipeCount: recipes.length,
       recipes: recipes,
     };
+    const jsonString = JSON.stringify(backup, null, 2);
+
+    // Web has no native filesystem/sharing — trigger a browser download instead.
+    if (Platform.OS === 'web') {
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    const filepath = `${FileSystem.documentDirectory}${filename}`;
 
     // Write to file
-    await FileSystem.writeAsStringAsync(filepath, JSON.stringify(backup, null, 2));
+    await FileSystem.writeAsStringAsync(filepath, jsonString);
 
     // Share the file
     if (await Sharing.isAvailableAsync()) {
