@@ -57,7 +57,12 @@ export function RecipePhotoPicker({ photo, recipeName, onChange, compact = false
 
   const startPhotoSelection = () => {
     if (Platform.OS === "web") {
-      window.alert("Local recipe photos are available in the mobile app.");
+      // No native action sheet on web — go straight to the browser's own
+      // file/photo picker. On phones (iOS/Android Safari, Chrome) this
+      // system picker already offers "Take Photo" as one of its own options,
+      // so nothing is lost by skipping a custom Photo Library/Take Photo/
+      // Cancel menu here.
+      void selectPhoto("library");
       return;
     }
     Alert.alert("Recipe photo", "Attach one photo to this recipe.", [
