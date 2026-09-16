@@ -133,8 +133,23 @@ export default function SettingsScreen() {
       });
 
       if (result && !result.canceled && result.assets && result.assets.length > 0) {
-        const fileUri = result.assets[0].uri;
-        const fileContent = await FileSystem.readAsStringAsync(fileUri);
+        const asset = result.assets[0];
+
+        // expo-file-system has no real implementation on web (it's a bare stub there),
+        // so reading via FileSystem.readAsStringAsync always fails silently on web.
+        // Web instead gets the actual browser File object — read it with FileReader.
+        let fileContent: string;
+        if (Platform.OS === 'web' && asset.file) {
+          fileContent = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsText(asset.file as File);
+          });
+        } else {
+          fileContent = await FileSystem.readAsStringAsync(asset.uri);
+        }
+
         const importedRecipes = await importRecipesFromJSON(fileContent);
 
         // React Native's multi-button Alert.alert is unreliable on web (often renders
