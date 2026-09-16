@@ -13,18 +13,30 @@ function extractPureIngredient(ingredient: string): string {
     // Remove common instruction phrases
     .replace(/\b(add|mix|combine|stir|fold|whisk|beat|blend|process|heat|cook|bake|fry|boil|steam|roast|grill|simmer|braise|stew|sauté|season|taste|adjust|serve|garnish|top|sprinkle|drizzle|pour|spread|layer|arrange|place|set aside|keep|store|refrigerate|freeze|thaw|let|allow|until|when|if|as|then|before|after|while|during)\b/gi, '')
     // Remove common quantity descriptors
-    .replace(/\b(tbsp|tsp|cup|cups|oz|lb|lbs|g|kg|ml|l|pinch|dash|splash|handful|piece|pieces|slice|slices|stalk|stalks|clove|cloves|head|heads|bunch|bunches|can|cans|jar|jars|bottle|bottles|package|packages|pkt|pkts|approx|approximately|about|roughly|around|or so)\b/gi, '')
+    .replace(/\b(tbsp|tsp|cup|cups|oz|lb|lbs|g|kg|ml|l|pinch|dash|splash|handful|piece|pieces|pcs|pc|slice|slices|stalk|stalks|clove|cloves|head|heads|bunch|bunches|can|cans|jar|jars|bottle|bottles|package|packages|pkt|pkts|approx|approximately|about|roughly|around|or so|a|an)\b/gi, '')
+    // Unicode vulgar fractions (½ ⅓ ⅔ ¼ ¾ ⅕ etc.) count as quantities too
+    .replace(/[\u00BC-\u00BE\u2150-\u215E]/g, '')
     // Remove numbers and measurements
     .replace(/\d+[\d.\/]*\s*-?\s*\d*\s*/g, '')
-    // Remove parenthetical content (often contains instructions)
+    // Remove parenthetical and bracketed content (often section labels or instructions)
     .replace(/\([^)]*\)/g, '')
-    // Remove special characters and extra whitespace
-    .replace(/[&,;:]/g, '')
+    .replace(/\[[^\]]*\]/g, '')
+    // Remove special characters and extra whitespace, including em/en dashes and tildes
+    // used as name:quantity separators (e.g. "cornstarch — 1 tbsp", "chilli – 3 pcs")
+    .replace(/[&,;:~–—]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
     // Remove stray single letters at start (artifacts from quantity removal like 'g' from grams)
     .replace(/^[a-z]\s+/i, '')
+    // Strip leading/trailing separator punctuation left dangling after quantity/unit removal
+    // (e.g. "cornstarch —" or "~ water" once the number before/after it is gone)
+    .replace(/^[\s\-–—~:]+|[\s\-–—~:]+$/g, '')
     .trim();
+
+  // If the entry is just a bracketed label with nothing else (e.g. "[sauce]"), treat as empty
+  if (/^\[[^\]]*\]$/.test(ingredient.trim())) {
+    return '';
+  }
 
   // If result is empty or too short, return original cleaned version
   if (cleaned.length < 2) {
@@ -34,6 +46,7 @@ function extractPureIngredient(ingredient: string): string {
       .replace(/\d+[\d.\/]*\s*-?\s*\d*\s*/g, '')
       .replace(/\([^)]*\)/g, '')
       .replace(/\s+/g, ' ')
+      .replace(/^[\s\-–—~:]+|[\s\-–—~:]+$/g, '')
       .trim();
   }
 
