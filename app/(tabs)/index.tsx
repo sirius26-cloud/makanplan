@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, Pressable, ActivityIndicator, FlatList } from 'react-native';
+import { ScrollView, Text, View, Pressable, ActivityIndicator } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useRouter } from 'expo-router';
@@ -89,78 +89,74 @@ export default function HomeScreen() {
               </View>
 
               {/* Meal Days */}
-              <FlatList
-                data={plan.days}
-                keyExtractor={(item) => `day_${item.day}`}
-                scrollEnabled={false}
-                renderItem={({ item, index }) => {
-                  const mainColor = getCategoryColor(item.main.type);
-                  const vegColor = item.vegSide ? getCategoryColor(item.vegSide.type) : null;
+              {plan.days.map((item, index) => {
+                const mainColor = getCategoryColor(item.main.type);
+                const vegColor = item.vegSide ? getCategoryColor(item.vegSide.type) : null;
 
-                  return (
-                    <Pressable
-                      onPress={() => handleDayPress(index)}
-                      style={({ pressed }) => [
-                        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-                        { opacity: pressed ? 0.7 : 1 },
-                      ]}
-                      className="mb-4 p-4 bg-surface rounded-lg border border-border"
-                    >
-                      <View className="gap-4">
-                        <Text className="text-base font-bold text-muted">
-                          Day {item.day}
+                return (
+                  <Pressable
+                    key={`day_${item.day}`}
+                    onPress={() => handleDayPress(index)}
+                    style={({ pressed }) => [
+                      { transform: [{ scale: pressed ? 0.98 : 1 }] },
+                      { opacity: pressed ? 0.7 : 1 },
+                    ]}
+                    className="mb-4 p-4 bg-surface rounded-lg border border-border"
+                  >
+                    <View className="gap-4">
+                      <Text className="text-base font-bold text-muted">
+                        Day {item.day}
+                      </Text>
+
+                      {/* Main */}
+                      <View
+                        className="p-3 rounded-lg border-2 gap-2"
+                        style={{
+                          backgroundColor: mainColor.bg,
+                          borderColor: mainColor.border,
+                        }}
+                      >
+                        <Text
+                          className="text-xs font-bold"
+                          style={{ color: mainColor.text }}
+                        >
+                          MAIN
                         </Text>
+                        <Text
+                          className="text-lg font-bold"
+                          style={{ color: mainColor.text }}
+                        >
+                          {item.main.name}
+                        </Text>
+                      </View>
 
-                        {/* Main */}
+                      {/* Veg Side */}
+                      {item.vegSide && vegColor && (
                         <View
                           className="p-3 rounded-lg border-2 gap-2"
                           style={{
-                            backgroundColor: mainColor.bg,
-                            borderColor: mainColor.border,
+                            backgroundColor: vegColor.bg,
+                            borderColor: vegColor.border,
                           }}
                         >
                           <Text
                             className="text-xs font-bold"
-                            style={{ color: mainColor.text }}
+                            style={{ color: vegColor.text }}
                           >
-                            MAIN
+                            VEG SIDE
                           </Text>
                           <Text
                             className="text-lg font-bold"
-                            style={{ color: mainColor.text }}
+                            style={{ color: vegColor.text }}
                           >
-                            {item.main.name}
+                            {item.vegSide.name}
                           </Text>
                         </View>
-
-                        {/* Veg Side */}
-                        {item.vegSide && vegColor && (
-                          <View
-                            className="p-3 rounded-lg border-2 gap-2"
-                            style={{
-                              backgroundColor: vegColor.bg,
-                              borderColor: vegColor.border,
-                            }}
-                          >
-                            <Text
-                              className="text-xs font-bold"
-                              style={{ color: vegColor.text }}
-                            >
-                              VEG SIDE
-                            </Text>
-                            <Text
-                              className="text-lg font-bold"
-                              style={{ color: vegColor.text }}
-                            >
-                              {item.vegSide.name}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </Pressable>
-                  );
-                }}
-              />
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })}
 
               {/* Action Buttons */}
               <View className="gap-3 mt-4">
