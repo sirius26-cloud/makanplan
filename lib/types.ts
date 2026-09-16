@@ -27,6 +27,13 @@ export interface Recipe {
   spiceLevel: 'light' | 'light-medium' | 'medium'; // User prefers light/clean dinners
   photo?: RecipePhoto; // Optional photo stored locally on this device
   createdAt: number; // Timestamp
+  /**
+   * Optional: marks this recipe as a reference-only item (a sauce/paste/dessert),
+   * not a standalone dinner component. When set, the weekly meal generator
+   * excludes this recipe entirely — it will never be selected as a main,
+   * veg side, or one-pot dish. Leave undefined for normal meal-plannable dishes.
+   */
+  courseType?: 'dessert' | 'sauce';
 }
 
 export interface MealDay {
