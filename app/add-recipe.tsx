@@ -13,6 +13,11 @@ const RECIPE_TYPES: RecipeType[] = ['protein_main', 'veg_side', 'rice_noodle_one
 const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu'];
 const CUISINES = ['Japanese', 'Thai', 'Cantonese', 'Vietnamese', 'Western', 'Mixed'] as const;
 const SPICE_LEVELS = ['light', 'light-medium', 'medium'] as const;
+const COURSE_OPTIONS: Array<{ value: 'dessert' | 'sauce' | undefined; label: string }> = [
+  { value: undefined, label: 'Normal Dish' },
+  { value: 'sauce', label: '🥣 Sauce / Paste' },
+  { value: 'dessert', label: '🍰 Dessert' },
+];
 
 export default function AddRecipeScreen() {
   const { addRecipe } = useRecipes();
@@ -34,6 +39,7 @@ export default function AddRecipeScreen() {
   const [isFavourite, setIsFavourite] = useState(false);
   const [isStaple, setIsStaple] = useState(false);
   const [photo, setPhoto] = useState<RecipePhoto | undefined>();
+  const [courseType, setCourseType] = useState<'dessert' | 'sauce' | undefined>(undefined);
 
   // Load imported recipe if provided
   useEffect(() => {
@@ -92,6 +98,7 @@ export default function AddRecipeScreen() {
         spiceLevel,
         photo,
         createdAt: Date.now(),
+        courseType,
       };
 
       await addRecipe(newRecipe);
@@ -174,6 +181,36 @@ export default function AddRecipeScreen() {
                     }`}
                   >
                     {t === 'protein_main' ? 'Main' : t === 'veg_side' ? 'Veg' : 'Rice/Noodle'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {/* Course (reference-only items skip the weekly planner) */}
+          <View className="gap-2">
+            <Text className="text-lg font-bold text-foreground">Course</Text>
+            <Text className="text-sm text-muted">
+              Sauces, pastes, and desserts are saved for reference but never suggested in your weekly plan.
+            </Text>
+            <View className="flex-row gap-2 flex-wrap">
+              {COURSE_OPTIONS.map((opt) => (
+                <Pressable
+                  key={opt.label}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setCourseType(opt.value);
+                  }}
+                  className={`px-3 py-2 rounded-full ${
+                    courseType === opt.value ? 'bg-primary' : 'bg-surface border border-border'
+                  }`}
+                >
+                  <Text
+                    className={`text-sm font-bold ${
+                      courseType === opt.value ? 'text-white' : 'text-foreground'
+                    }`}
+                  >
+                    {opt.label}
                   </Text>
                 </Pressable>
               ))}
