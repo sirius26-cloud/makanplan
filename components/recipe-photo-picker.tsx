@@ -57,7 +57,7 @@ export function RecipePhotoPicker({ photo, recipeName, onChange, compact = false
 
   const startPhotoSelection = () => {
     if (Platform.OS === "web") {
-      Alert.alert("Mobile feature", "Local recipe photos are available in the mobile app.");
+      window.alert("Local recipe photos are available in the mobile app.");
       return;
     }
     Alert.alert("Recipe photo", "Attach one photo to this recipe.", [
