@@ -291,7 +291,12 @@ export default function SettingsScreen() {
       await exportFullRecipeBackup(recipes);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      Alert.alert('Export Failed', error instanceof Error ? error.message : 'Please try again.');
+      const message = error instanceof Error ? error.message : 'Please try again.';
+      if (Platform.OS === 'web') {
+        window.alert(message);
+      } else {
+        Alert.alert('Export Failed', message);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsFullExporting(false);
@@ -309,15 +314,51 @@ export default function SettingsScreen() {
       });
 
       if (!result || result.canceled || !result.assets?.[0]) {
-        Alert.alert('Import Cancelled', 'No file was selected.');
+        if (Platform.OS === 'web') {
+          window.alert('No file was selected.');
+        } else {
+          Alert.alert('Import Cancelled', 'No file was selected.');
+        }
         return;
       }
 
-      const zipBase64 = await FileSystem.readAsStringAsync(result.assets[0].uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      const fullBackupAsset = result.assets[0];
+      let zipBase64: string;
+      if (Platform.OS === 'web' && fullBackupAsset.file) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(fullBackupAsset.file as File);
+        });
+        zipBase64 = dataUrl.split(',')[1] ?? '';
+      } else {
+        zipBase64 = await FileSystem.readAsStringAsync(fullBackupAsset.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      }
 
       const { recipes: importedRecipes, photoFiles } = await parseFullRecipeBackup(zipBase64);
+
+      if (Platform.OS === 'web') {
+        const wantsReplace = window.confirm(
+          `Found ${importedRecipes.length} recipes.\n\nPress OK to replace your current library.`,
+        );
+        if (wantsReplace) {
+          try {
+            const recipesWithPhotos = await restoreFullBackupPhotos(importedRecipes, photoFiles);
+            await replaceAllRecipes(recipesWithPhotos);
+            window.alert(`${recipesWithPhotos.length} recipes restored.`);
+          } catch {
+            window.alert('Failed to restore backup.');
+          } finally {
+            setIsFullImporting(false);
+          }
+        } else {
+          setIsFullImporting(false);
+        }
+        return;
+      }
 
       Alert.alert(
         'Restore Full Backup',
@@ -344,7 +385,12 @@ export default function SettingsScreen() {
         ],
       );
     } catch (error) {
-      Alert.alert('Import Failed', error instanceof Error ? error.message : 'Please check the file.');
+      const message = error instanceof Error ? error.message : 'Please check the file.';
+      if (Platform.OS === 'web') {
+        window.alert(message);
+      } else {
+        Alert.alert('Import Failed', message);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setIsFullImporting(false);
     }
