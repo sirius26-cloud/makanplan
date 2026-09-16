@@ -69,7 +69,9 @@ export async function importRecipesFromJSON(jsonString: string): Promise<Recipe[
 
     // Validate each recipe has required fields
     const recipes = backup.recipes.map((recipe: any) => {
-      if (!recipe.id || !recipe.name || !recipe.ingredients || !recipe.instructions) {
+      // Note: instructions may legitimately be an empty string (a placeholder recipe
+      // the user hasn't written up yet) — only reject if the field is missing entirely.
+      if (!recipe.id || !recipe.name || !recipe.ingredients || typeof recipe.instructions !== 'string') {
         throw new Error(`Invalid recipe format: ${recipe.name || 'unknown'}`);
       }
       return recipe as Recipe;
