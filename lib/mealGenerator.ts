@@ -53,10 +53,13 @@ export function generateWeeklyPlan(
   dietaryRestrictionFilter?: (recipe: Recipe) => boolean,
   recentlyServedRecipeIds?: string[],
 ): WeeklyPlan {
+  // Reference-only recipes (sauces, pastes, desserts) are never meal-plannable
+  const mealPlannableRecipes = recipes.filter((r) => !r.courseType);
+
   // Filter recipes by proteins if specified
   let availableRecipes = proteinFilters && proteinFilters.length > 0
-    ? recipes.filter((r) => proteinFilters.includes(r.protein))
-    : recipes;
+    ? mealPlannableRecipes.filter((r) => proteinFilters.includes(r.protein))
+    : mealPlannableRecipes;
 
   // Apply dietary restrictions filter
   if (dietaryRestrictionFilter) {
@@ -138,9 +141,12 @@ export function regenerateMealDay(
   dietaryRestrictionFilter?: (recipe: Recipe) => boolean,
   recentlyServedRecipeIds?: string[],
 ): MealDay {
+  // Reference-only recipes (sauces, pastes, desserts) are never meal-plannable
+  const mealPlannableRecipes = recipes.filter((r) => !r.courseType);
+
   let availableRecipes = proteinFilters && proteinFilters.length > 0
-    ? recipes.filter((r) => proteinFilters.includes(r.protein))
-    : recipes;
+    ? mealPlannableRecipes.filter((r) => proteinFilters.includes(r.protein))
+    : mealPlannableRecipes;
 
   // Apply dietary restrictions filter
   if (dietaryRestrictionFilter) {
@@ -197,9 +203,12 @@ export async function generateMealDayWithFormat(
   format: 'one-pot' | 'main-veg',
   proteinFilters?: ProteinType[],
 ): Promise<MealDay> {
-  const vegSides = recipes.filter((r) => r.type === 'veg_side');
-  const riceNoodleMains = recipes.filter((r) => r.type === 'rice_noodle_one_pot');
-  const proteinMains = recipes.filter(
+  // Reference-only recipes (sauces, pastes, desserts) are never meal-plannable
+  const mealPlannableRecipes = recipes.filter((r) => !r.courseType);
+
+  const vegSides = mealPlannableRecipes.filter((r) => r.type === 'veg_side');
+  const riceNoodleMains = mealPlannableRecipes.filter((r) => r.type === 'rice_noodle_one_pot');
+  const proteinMains = mealPlannableRecipes.filter(
     (r) =>
       r.type === 'protein_main' &&
       (!proteinFilters || proteinFilters.length === 0 || proteinFilters.includes(r.protein)),
