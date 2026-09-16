@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, Pressable, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { ScrollView, Text, View, Pressable, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useState, useEffect } from 'react';
@@ -112,7 +112,11 @@ export default function SettingsScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error('Export failed:', error);
-      Alert.alert('Export Failed', 'Could not export recipes. Please try again.');
+      if (Platform.OS === 'web') {
+        window.alert('Could not export recipes. Please try again.');
+      } else {
+        Alert.alert('Export Failed', 'Could not export recipes. Please try again.');
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsExporting(false);
@@ -132,6 +136,45 @@ export default function SettingsScreen() {
         const fileUri = result.assets[0].uri;
         const fileContent = await FileSystem.readAsStringAsync(fileUri);
         const importedRecipes = await importRecipesFromJSON(fileContent);
+
+        // React Native's multi-button Alert.alert is unreliable on web (often renders
+        // nothing at all), so web uses the browser's own confirm/alert instead.
+        if (Platform.OS === 'web') {
+          const wantsReplace = window.confirm(
+            `Found ${importedRecipes.length} recipes.\n\nPress OK to REPLACE your entire library with these, or Cancel to choose adding instead.`,
+          );
+          if (wantsReplace) {
+            try {
+              const count = await replaceAllRecipes(importedRecipes);
+              window.alert(`Import successful — replaced library: ${count} recipes`);
+            } catch (err) {
+              window.alert('Failed to replace recipes.');
+            } finally {
+              setIsImporting(false);
+            }
+          } else {
+            const wantsAdd = window.confirm(
+              `Add these ${importedRecipes.length} recipes to your existing library instead?\n\nPress OK to add, Cancel to stop without changing anything.`,
+            );
+            if (wantsAdd) {
+              try {
+                const { added, skipped } = await mergeImportedRecipes(importedRecipes);
+                let message = `Added ${added} new recipes`;
+                if (skipped > 0) {
+                  message += `, skipped ${skipped} duplicates`;
+                }
+                window.alert(message);
+              } catch (err) {
+                window.alert('Failed to add recipes.');
+              } finally {
+                setIsImporting(false);
+              }
+            } else {
+              setIsImporting(false);
+            }
+          }
+          return;
+        }
 
         // Show dialog to choose replace or add
         Alert.alert(
@@ -184,12 +227,20 @@ export default function SettingsScreen() {
           ],
         );
       } else {
-        Alert.alert('Import Cancelled', 'No file was selected.');
+        if (Platform.OS === 'web') {
+          window.alert('No file was selected.');
+        } else {
+          Alert.alert('Import Cancelled', 'No file was selected.');
+        }
         setIsImporting(false);
       }
     } catch (error) {
       console.error('Import failed:', error);
-      Alert.alert('Import Failed', 'Could not import recipes. Please check the file format.');
+      if (Platform.OS === 'web') {
+        window.alert('Could not import recipes. Please check the file format.');
+      } else {
+        Alert.alert('Import Failed', 'Could not import recipes. Please check the file format.');
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setIsImporting(false);
     }
