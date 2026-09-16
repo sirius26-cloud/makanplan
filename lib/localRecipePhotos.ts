@@ -5,6 +5,40 @@ import type { RecipePhoto } from "./types";
 
 const PHOTO_DIRECTORY_NAME = "recipe-photos";
 
+// Web has no native file system — recipe photos are stored as a compressed
+// base64 data URL directly on the recipe itself (photo.localUri). This needs
+// no separate storage layer: RecipePhotoView already just renders whatever
+// URI it's given, and a data URL renders exactly like a file:// URI would.
+// Capped at 1024px / JPEG q0.7 so a photo stays reasonably small next to the
+// rest of the recipe library in browser storage.
+const WEB_MAX_DIMENSION = 1024;
+const WEB_JPEG_QUALITY = 0.7;
+
+async function compressImageForWeb(uri: string): Promise<{ dataUrl: string; mimeType: string }> {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const bitmap = await createImageBitmap(blob);
+
+  let { width, height } = bitmap;
+  if (width > WEB_MAX_DIMENSION || height > WEB_MAX_DIMENSION) {
+    const scale = WEB_MAX_DIMENSION / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Could not process this image on your browser.");
+  }
+  ctx.drawImage(bitmap, 0, 0, width, height);
+
+  const dataUrl = canvas.toDataURL("image/jpeg", WEB_JPEG_QUALITY);
+  return { dataUrl, mimeType: "image/jpeg" };
+}
+
 function getExtension(mimeType?: string | null): string {
   if (mimeType === "image/png") return "png";
   if (mimeType === "image/webp") return "webp";
@@ -28,7 +62,8 @@ export async function saveLocalRecipePhoto({
   recipeName: string;
 }): Promise<RecipePhoto> {
   if (Platform.OS === "web") {
-    throw new Error("Local recipe photos are available in the mobile app.");
+    const { dataUrl, mimeType: resolvedMimeType } = await compressImageForWeb(uri);
+    return { localUri: dataUrl, mimeType: resolvedMimeType, savedAt: Date.now() };
   }
 
   const directoryUri = getPhotoDirectoryUri();
