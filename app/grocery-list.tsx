@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, Pressable, FlatList, Share, Platform, Alert } from 'react-native';
+import { ScrollView, Text, View, Pressable, Share, Platform, Alert } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useRouter } from 'expo-router';
@@ -167,39 +167,42 @@ export default function GroceryListScreen() {
             categoryItems.length > 0 ? (
               <View key={category} className="gap-3">
                 <Text className="text-lg font-bold text-foreground">{category}</Text>
-                <FlatList
-                  data={categoryItems}
-                  keyExtractor={(item) => item.id}
-                  scrollEnabled={false}
-                  renderItem={({ item }) => (
-                    <Pressable
-                      onPress={() => handleToggleItem(item.id)}
-                      style={({ pressed }) => [
-                        { opacity: pressed ? 0.7 : 1 },
-                      ]}
-                      className="flex-row items-center gap-3 py-3 px-4 rounded-lg bg-surface border border-border"
+                {/* Plain list render instead of a FlatList nested inside the
+                    page's ScrollView — that combination is a known React
+                    Native Web conflict that caused intermittent scroll bugs
+                    (same root cause fixed earlier on Home/Recipes). This list
+                    was already non-virtualized (scrollEnabled={false}), so a
+                    plain .map() changes nothing about behavior, only the
+                    scroll conflict. */}
+                {categoryItems.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => handleToggleItem(item.id)}
+                    style={({ pressed }) => [
+                      { opacity: pressed ? 0.7 : 1 },
+                    ]}
+                    className="flex-row items-center gap-3 py-3 px-4 rounded-lg bg-surface border border-border"
+                  >
+                    <View
+                      className={`w-6 h-6 rounded border-2 items-center justify-center ${
+                        item.isChecked
+                          ? 'bg-success border-success'
+                          : 'border-border bg-background'
+                      }`}
                     >
-                      <View
-                        className={`w-6 h-6 rounded border-2 items-center justify-center ${
-                          item.isChecked
-                            ? 'bg-success border-success'
-                            : 'border-border bg-background'
-                        }`}
-                      >
-                        {item.isChecked && <Text className="text-white font-bold text-sm">✓</Text>}
-                      </View>
-                      <Text
-                        className={`flex-1 text-lg ${
-                          item.isChecked
-                            ? 'text-muted line-through'
-                            : 'text-foreground'
-                        }`}
-                      >
-                        {item.name}
-                      </Text>
-                    </Pressable>
-                  )}
-                />
+                      {item.isChecked && <Text className="text-white font-bold text-sm">✓</Text>}
+                    </View>
+                    <Text
+                      className={`flex-1 text-lg ${
+                        item.isChecked
+                          ? 'text-muted line-through'
+                          : 'text-foreground'
+                      }`}
+                    >
+                      {item.name}
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
             ) : null,
           )}
