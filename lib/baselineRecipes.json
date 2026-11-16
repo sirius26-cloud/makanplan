@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "exportDate": "2026-10-08T16:41:09.724Z",
-  "recipeCount": 63,
+  "recipeCount": 64,
   "recipes": [
     {
       "id": "acqua_pazza_fish",
@@ -2007,6 +2007,33 @@
       "cuisineType": "Cantonese",
       "spiceLevel": "light",
       "createdAt": 1791477636998
+    },
+    {
+      "id": "chicken_yakitori_air_fryer",
+      "name": "Chicken Yakitori (Air Fryer) - Japanese Cooking Channel (JCC) recipe",
+      "type": "protein_main",
+      "protein": "chicken",
+      "hasVeg": false,
+      "isRice": false,
+      "isFavourite": false,
+      "isStaple": false,
+      "ingredients": [
+        "(One serving, about 3-4 sticks)",
+        "1 chicken thigh (skin-on)",
+        "1 chicken breast (skin-on)",
+        "1 thick green onion (negi) / large onion – cut into 1 inch pieces",
+        "Tare sauce:",
+        "Soy sauce – 2 tbsp (4 tbsp for double portion)",
+        "Mirin – 2 tbsp (4 tbsp for double portion)",
+        "Brown sugar – 2-3 tsp (4-6 tsp for double portion)",
+        "Cooking oil – 2 tsp (to prevent drying up) (4 tsp for double)",
+        "Potato starch – 1 tsp (2 tsp for double)"
+      ],
+      "instructions": "1) Cut chicken into bite-sized pieces\n2) Slice large green onion\n3) Soak skewers in water for 5 mins (to prevent burning)\n4) Make the tare sauce and split into half. Cook one portion for drizzling on rice later. Keep 2nd portion as marinade and soak chicken on both sides for ~5 mins.\n5) Skewer chicken and negi alternately on the stick, then coat evenly in tare marinade.\n6) Cook chicken for 5-6 mins per side in air fryer (drizzle some of the marinade on it before grilling)\n7) Serve with white rice\n\nSource: https://www.youtube.com/watch?v=0Xa4yb_GMzo",
+      "servings": 1,
+      "cuisineType": "Japanese",
+      "spiceLevel": "light",
+      "createdAt": 1794820855051
     }
   ]
 }

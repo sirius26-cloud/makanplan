@@ -51,6 +51,6 @@ describe('first sync populates the 63-recipe baseline', () => {
 
   it('a fresh device (baseline seed) syncs with no copies', async () => {
     const out = await syncRecipes(USER_RECIPES);
-    expect(out).toHaveLength(63);
+    expect(out).toHaveLength(USER_RECIPES.length);
   });
 });
