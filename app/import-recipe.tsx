@@ -5,7 +5,6 @@ import {
   Pressable,
   TextInput,
   ActivityIndicator,
-  Alert,
   Clipboard,
 } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
@@ -14,6 +13,7 @@ import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { parseRecipeText, parseRecipeFromUrl, formatParsedRecipe, ParsedRecipe } from '@/lib/recipeImport';
 import { useRecipes } from '@/lib/RecipeContext';
+import { notify } from '@/lib/dialog';
 import { isSyncConfigured, parseRecipeWithAI } from '@/lib/sync';
 import type { Recipe } from '@/lib/types';
 
@@ -34,7 +34,7 @@ export default function ImportRecipeScreen() {
 
   const handleParseUrl = async () => {
     if (!urlInput.trim()) {
-      Alert.alert('Please enter a recipe URL');
+      notify('Please enter a recipe URL');
       return;
     }
 
@@ -55,7 +55,7 @@ export default function ImportRecipeScreen() {
     } catch (error) {
       console.error('Failed to parse URL:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Failed to parse recipe', 'Please check the URL and try again');
+      notify('Failed to parse recipe', 'Please check the URL and try again');
     } finally {
       setIsLoading(false);
     }
@@ -63,7 +63,7 @@ export default function ImportRecipeScreen() {
 
   const handleParseText = async () => {
     if (!textInput.trim()) {
-      Alert.alert('Please paste recipe text');
+      notify('Please paste recipe text');
       return;
     }
 
@@ -80,7 +80,7 @@ export default function ImportRecipeScreen() {
           notes = ai.reviewNotes;
         } catch (aiError) {
           console.error('AI parse failed, using basic parser:', aiError);
-          Alert.alert(
+          notify(
             'Smart parsing unavailable',
             'Using the basic parser instead, so please check the fields carefully.',
           );
@@ -98,7 +98,7 @@ export default function ImportRecipeScreen() {
     } catch (error) {
       console.error('Failed to parse text:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Failed to parse recipe', 'Please check the format and try again');
+      notify('Failed to parse recipe', 'Please check the format and try again');
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +109,7 @@ export default function ImportRecipeScreen() {
     if (!parsedRecipe?.name) return;
     const name = parsedRecipe.name.trim();
     if (recipes.some((r) => r.name.trim().toLowerCase() === name.toLowerCase())) {
-      Alert.alert('Already in your recipes', `"${name}" already exists. Use "Review & Edit" to save it under a different name.`);
+      notify('Already in your recipes', `"${name}" already exists. Use "Review & Edit" to save it under a different name.`);
       return;
     }
     const now = Date.now();

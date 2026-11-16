@@ -2,7 +2,7 @@ import { ScrollView, Text, View, Pressable, TextInput, ActivityIndicator } from 
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Recipe, RecipeType, ProteinType } from '@/lib/types';
 import * as Haptics from 'expo-haptics';
 import { ParsedRecipe } from '@/lib/recipeImport';
@@ -24,6 +24,7 @@ export default function AddRecipeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [isSaving, setIsSaving] = useState(false);
+  const saveLock = useRef(false); // stops a fast double-click saving the recipe twice
 
   // Form state
   const [name, setName] = useState('');
@@ -71,12 +72,14 @@ export default function AddRecipeScreen() {
   }, [params.importedRecipe]);
 
   const handleSave = async () => {
+    if (saveLock.current) return;
     if (!name.trim()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     try {
+      saveLock.current = true;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setIsSaving(true);
 
@@ -110,6 +113,7 @@ export default function AddRecipeScreen() {
     } catch (error) {
       console.error('Failed to save recipe:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      saveLock.current = false;
     } finally {
       setIsSaving(false);
     }
