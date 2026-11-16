@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "exportDate": "2026-10-08T16:41:09.724Z",
-  "recipeCount": 64,
+  "recipeCount": 65,
   "recipes": [
     {
       "id": "acqua_pazza_fish",
@@ -2034,6 +2034,54 @@
       "cuisineType": "Japanese",
       "spiceLevel": "light",
       "createdAt": 1794820855051
+    },
+    {
+      "id": "kung_pao_chicken_made_with_lau",
+      "name": "Kung Pao Chicken (Made with Lau recipe)",
+      "type": "protein_main",
+      "protein": "chicken",
+      "hasVeg": true,
+      "isRice": false,
+      "isFavourite": false,
+      "isStaple": false,
+      "ingredients": [
+        "(Serves 3-4 pax, about 1 bowl)",
+        "Chicken breast / thigh – ~450g",
+        "Cashew nut – 1 handful",
+        "Broccoli stem – 1 small piece",
+        "Celery – ½ stalk",
+        "Carrot – 1 small piece",
+        "Green bell pepper – 1 small quarter",
+        "Dried chilli – 3-4 pieces",
+        "Shallots – 4-5 pcs",
+        "Garlic – 3-4 cloves",
+        "Chicken marinade:",
+        "White pepper – ½ tsp",
+        "Sugar – 1 tsp",
+        "Oyster sauce – 1 tbsp",
+        "Soy sauce (light) – 1 tbsp",
+        "Soy sauce (dark) – ½ tsp",
+        "Shaoxing wine – 1 tbsp",
+        "Corn flour – 1 tbsp",
+        "Water – 1 tbsp",
+        "(+ sesame sauce & cooking oil)",
+        "Stir fry sauce:",
+        "Sugar – 1 tsp",
+        "Salt – ½ tsp",
+        "Oyster sauce – 1 tbsp",
+        "Light soy sauce – 1 tbsp",
+        "Dark soy sauce – ½ tsp",
+        "Shaoxing wine – 1 tbsp",
+        "Ground bean sauce – 1 tsp",
+        "Slurry:",
+        "½ tbsp corn flour",
+        "2 tbsp water"
+      ],
+      "instructions": "Prep:\n- Cut chicken into bite-sized cubes.\n- Marinate with the chicken marinade (see ingredients list). Mix well and set aside.\n- Chop broccoli stems, celery and carrot into small cubes (diced).\n- Mince garlic and slice shallots.\n- Cut bell peppers into small pieces.\n- Chilli peppers can either be sliced or whole.\n\nCooking sequence:\n1) Lightly fry peanuts with 1 tbsp of oil for ~2 mins (lower heat!) till golden and set aside.\n2) Top up oil as needed and fry chicken on medium-high heat. Stir when the lower layer is cooked (40-50 sec) and remove from heat. Don't overcook!\n3) Add 2 cups of water to the wok and add salt and bicarb soda. When boiling, add carrot, followed by celery and broccoli stems and cook for ~1 min till a bit softer, then add bell peppers. Try texture and remove from water (drain). Note: soak in cold water if leaving for later.\n4) Clean and dry wok.\n5) Add oil, turn heat to low-med and add dried chilli. Then add shallots and garlic. Remove from heat and stir fry till fragrant.\n6) Add chicken and turn heat to med-high. Add veggies. Stir fry everything on high heat for 30 secs.\n7) Add stir fry sauce. Mix well.\n8) Add 3-4 tbsp of water (for some gravy and for the chicken to absorb).\n9) Taste test and add seasonings as needed.\n10) Turn heat to low and add cornstarch slurry. Stir well.\n11) Top with 1 tsp sesame oil, stir and add nuts on top. Serve.\n\nSource: YT - Made with Lau",
+      "servings": 4,
+      "cuisineType": "Mixed",
+      "spiceLevel": "light-medium",
+      "createdAt": 1794821038141
     }
   ]
 }
