@@ -9,6 +9,10 @@ export interface ParsedRecipe {
   protein?: ProteinType;
   type?: RecipeType;
   spiceLevel?: string;
+  hasVeg?: boolean;
+  isRice?: boolean;
+  courseType?: 'dessert' | 'sauce';
+  reviewNotes?: string[];
 }
 
 // Common recipe websites

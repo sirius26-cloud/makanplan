@@ -11,7 +11,7 @@ import type { RecipePhoto } from '@/lib/types';
 
 const RECIPE_TYPES: RecipeType[] = ['protein_main', 'veg_side', 'rice_noodle_one_pot'];
 const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu'];
-const CUISINES = ['Japanese', 'Thai', 'Cantonese', 'Vietnamese', 'Western', 'Mixed'] as const;
+const CUISINES = ['Japanese', 'Thai', 'Cantonese', 'Vietnamese', 'Western', 'Mixed', 'Taiwanese'] as const;
 const SPICE_LEVELS = ['light', 'light-medium', 'medium'] as const;
 const COURSE_OPTIONS: Array<{ value: 'dessert' | 'sauce' | undefined; label: string }> = [
   { value: undefined, label: 'Normal Dish' },
@@ -60,6 +60,9 @@ export default function AddRecipeScreen() {
         if (imported.spiceLevel) {
           setSpiceLevel(imported.spiceLevel as typeof SPICE_LEVELS[number]);
         }
+        if (typeof imported.hasVeg === 'boolean') setHasVeg(imported.hasVeg);
+        if (typeof imported.isRice === 'boolean') setIsRice(imported.isRice);
+        if (imported.courseType) setCourseType(imported.courseType);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } catch (error) {
         console.error('Failed to load imported recipe:', error);

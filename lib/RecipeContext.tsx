@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Recipe, WeeklyPlan, AppSettings, MealHistoryEntry, DietaryRestriction } from './types';
 import { loadRecipes, saveRecipes, loadWeeklyPlan, saveWeeklyPlan, loadSettings, saveSettings, addMealHistory, getMealHistory, updateDietaryRestrictions, getDietaryRestrictions } from './storage';
 import { USER_RECIPES } from './userRecipes';
 import { SEED_RECIPES } from './seedRecipes';
 import { FAMILY_FAVOURITE_RECIPES, SIMILAR_DISHES } from './familyFavourites';
 import { FAMILY_RECIPES } from './familyRecipes';
+import { isSyncConfigured, recordDeletions, syncRecipes, getLastSync } from './sync';
 
 interface RecipeContextType {
   recipes: Recipe[];
@@ -39,6 +40,12 @@ interface RecipeContextType {
 
   // Reload data
   reload: () => Promise<void>;
+
+  // Cross-device sync (master recipe library)
+  syncStatus: 'off' | 'syncing' | 'ok' | 'error';
+  syncMessage: string;
+  lastSynced: number | null;
+  syncNow: () => Promise<boolean>;
 }
 
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
@@ -48,11 +55,51 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   const [weeklyPlan, setWeeklyPlanState] = useState<WeeklyPlan | null>(null);
   const [settings, setSettingsState] = useState<AppSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<'off' | 'syncing' | 'ok' | 'error'>('off');
+  const [syncMessage, setSyncMessage] = useState('');
+  const [lastSynced, setLastSynced] = useState<number | null>(null);
+  const recipesRef = useRef<Recipe[]>([]);
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load data on mount
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    recipesRef.current = recipes;
+  }, [recipes]);
+
+  // Merge this device with the master library. Never deletes anything by itself.
+  const runSync = useCallback(async (base?: Recipe[]): Promise<boolean> => {
+    try {
+      if (!(await isSyncConfigured())) {
+        setSyncStatus('off');
+        return false;
+      }
+      setSyncStatus('syncing');
+      const merged = await syncRecipes(base ?? recipesRef.current);
+      recipesRef.current = merged;
+      setRecipes(merged);
+      await saveRecipes(merged);
+      setLastSynced(await getLastSync());
+      setSyncStatus('ok');
+      setSyncMessage(`${merged.length} recipes in sync`);
+      return true;
+    } catch (error) {
+      console.error('Sync failed:', error);
+      setSyncStatus('error');
+      setSyncMessage(error instanceof Error ? error.message : 'Sync failed');
+      return false;
+    }
+  }, []);
+
+  function scheduleSync() {
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(() => {
+      void runSync();
+    }, 1500);
+  }
 
   async function loadData() {
     try {
@@ -74,6 +121,14 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
 
       setWeeklyPlanState(loadedPlan);
       setSettingsState(loadedSettings);
+      setLastSynced(await getLastSync());
+      // Sync in the background; the app is already usable with local data.
+      void (async () => {
+        const current = loadedRecipes.length === 0 ? USER_RECIPES : loadedRecipes;
+        recipesRef.current = current;
+        const last = await getLastSync();
+        if (!last || Date.now() - last > 60_000) await runSync(current);
+      })();
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -82,21 +137,30 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function addRecipe(recipe: Recipe) {
-    const updated = [...recipes, recipe];
+    const stamped = { ...recipe, updatedAt: Date.now() };
+    const updated = [...recipes, stamped];
     setRecipes(updated);
+    recipesRef.current = updated;
     await saveRecipes(updated);
+    scheduleSync();
   }
 
   async function updateRecipe(recipe: Recipe) {
-    const updated = recipes.map((r) => (r.id === recipe.id ? recipe : r));
+    const stamped = { ...recipe, updatedAt: Date.now() };
+    const updated = recipes.map((r) => (r.id === recipe.id ? stamped : r));
     setRecipes(updated);
+    recipesRef.current = updated;
     await saveRecipes(updated);
+    scheduleSync();
   }
 
   async function deleteRecipe(id: string) {
     const updated = recipes.filter((r) => r.id !== id);
     setRecipes(updated);
+    recipesRef.current = updated;
     await saveRecipes(updated);
+    await recordDeletions([id]);
+    scheduleSync();
   }
 
   async function toggleFavourite(id: string) {
@@ -119,8 +183,14 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function replaceAllRecipes(newRecipes: Recipe[]): Promise<number> {
+    // Recipes dropped by a restore are recorded as deletions so they don't
+    // reappear from the master library.
+    const keep = new Set(newRecipes.map((r) => r.id));
+    await recordDeletions(recipes.filter((r) => !keep.has(r.id)).map((r) => r.id));
     setRecipes(newRecipes);
+    recipesRef.current = newRecipes;
     await saveRecipes(newRecipes);
+    scheduleSync();
     return newRecipes.length;
   }
 
@@ -143,9 +213,11 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    const mergedRecipes = [...recipes, ...newRecipes];
+    const mergedRecipes = [...recipes, ...newRecipes.map((r) => ({ ...r, updatedAt: Date.now() }))];
     setRecipes(mergedRecipes);
+    recipesRef.current = mergedRecipes;
     await saveRecipes(mergedRecipes);
+    scheduleSync();
 
     return { added, skipped };
   }
@@ -233,6 +305,10 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     getDietaryFilters,
     isRecipeAllowed,
     reload,
+    syncStatus,
+    syncMessage,
+    lastSynced,
+    syncNow: () => runSync(),
   };
 
   return <RecipeContext.Provider value={value}>{children}</RecipeContext.Provider>;
