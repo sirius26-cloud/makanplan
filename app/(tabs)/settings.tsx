@@ -4,6 +4,7 @@ import { useRecipes } from '@/lib/RecipeContext';
 import { useState, useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
 import { exportRecipesAsJSON, importRecipesFromJSON } from '@/lib/recipeBackup';
+import { fetchMasterRecipes, getSyncBaseUrl, getSyncKey, setSyncBaseUrl, setSyncKey } from '@/lib/sync';
 import { getCloudBackupConfig, disconnectCloudBackup } from '@/lib/cloudBackup';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -14,7 +15,11 @@ import {
 } from '@/lib/fullRecipeBackup';
 
 export default function SettingsScreen() {
-  const { settings, updateSettings, recipes, replaceAllRecipes, mergeImportedRecipes, updateDietaryFilters, getDietaryFilters } = useRecipes();
+  const { settings, updateSettings, recipes, replaceAllRecipes, mergeImportedRecipes, updateDietaryFilters, getDietaryFilters, syncStatus, syncMessage, lastSynced, syncNow } = useRecipes();
+  const [syncKeyInput, setSyncKeyInput] = useState('');
+  const [syncBaseInput, setSyncBaseInput] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isMasterExporting, setIsMasterExporting] = useState(false);
   const [defaultServings, setDefaultServings] = useState(settings.defaultServings);
   const [pantryStaples, setPantryStaples] = useState(settings.pantryStaples);
   const [newStapleName, setNewStapleName] = useState('');
@@ -102,6 +107,46 @@ export default function SettingsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const updated = pantryStaples.filter((s) => s.id !== id);
     setPantryStaples(updated);
+  };
+
+  useEffect(() => {
+    (async () => {
+      setSyncKeyInput(await getSyncKey());
+      if (Platform.OS !== 'web') setSyncBaseInput(await getSyncBaseUrl());
+    })();
+  }, []);
+
+  const notify = (title: string, message: string) => {
+    if (Platform.OS === 'web') window.alert(`${title}\n${message}`);
+    else Alert.alert(title, message);
+  };
+
+  const handleSaveAndSync = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setIsSyncing(true);
+      await setSyncKey(syncKeyInput);
+      if (Platform.OS !== 'web') await setSyncBaseUrl(syncBaseInput);
+      const ok = await syncNow();
+      notify(ok ? 'Synced' : 'Sync failed', ok ? 'This device is now in sync with your master recipe library.' : 'Check the passcode and web address, then try again.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Downloads the MASTER library (what every device shares), in the standard backup format.
+  const handleExportMaster = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setIsMasterExporting(true);
+      await exportRecipesAsJSON(await fetchMasterRecipes());
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Master export failed:', error);
+      notify('Download failed', error instanceof Error ? error.message : 'Could not download the master backup.');
+    } finally {
+      setIsMasterExporting(false);
+    }
   };
 
   const handleExportRecipes = async () => {
@@ -560,6 +605,55 @@ export default function SettingsScreen() {
                 ))
               )}
             </View>
+          </View>
+
+          {/* Cloud Sync (master recipe library) */}
+          <View className="gap-3">
+            <Text className="text-2xl font-bold text-foreground">Cloud Sync</Text>
+            <Text className="text-sm text-muted">
+              Keeps every device on the same recipes and turns on smart recipe parsing. Enter the same passcode on each device.
+            </Text>
+            <TextInput
+              value={syncKeyInput}
+              onChangeText={setSyncKeyInput}
+              placeholder="Sync passcode"
+              placeholderTextColor="#999"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              className="p-3 bg-surface border border-border rounded-lg text-foreground text-base"
+            />
+            {Platform.OS !== 'web' && (
+              <TextInput
+                value={syncBaseInput}
+                onChangeText={setSyncBaseInput}
+                placeholder="MakanPlan web address (https://...vercel.app)"
+                placeholderTextColor="#999"
+                autoCapitalize="none"
+                autoCorrect={false}
+                className="p-3 bg-surface border border-border rounded-lg text-foreground text-base"
+              />
+            )}
+            <Pressable
+              onPress={handleSaveAndSync}
+              disabled={isSyncing}
+              style={({ pressed }) => [{ opacity: pressed && !isSyncing ? 0.8 : 1, backgroundColor: '#E85D2A', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' }]}
+            >
+              {isSyncing ? <ActivityIndicator color="white" /> : <Text className="text-white font-semibold text-base">🔄 Save & Sync Now</Text>}
+            </Pressable>
+            <Text className="text-sm text-muted">
+              {syncStatus === 'off' && 'Sync is off. Enter your passcode to turn it on.'}
+              {syncStatus === 'syncing' && 'Syncing…'}
+              {syncStatus === 'ok' && `${syncMessage}${lastSynced ? ` · last synced ${new Date(lastSynced).toLocaleString()}` : ''}`}
+              {syncStatus === 'error' && `Sync problem: ${syncMessage}`}
+            </Text>
+            <Pressable
+              onPress={handleExportMaster}
+              disabled={isMasterExporting}
+              style={({ pressed }) => [{ opacity: pressed && !isMasterExporting ? 0.8 : 1, backgroundColor: '#2D5016', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' }]}
+            >
+              {isMasterExporting ? <ActivityIndicator color="white" /> : <Text className="text-white font-semibold text-base">⬇️ Download Master Backup (JSON)</Text>}
+            </Pressable>
           </View>
 
           {/* Recipe Backups */}

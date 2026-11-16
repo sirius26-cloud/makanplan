@@ -27,6 +27,8 @@ export interface Recipe {
   spiceLevel: 'light' | 'light-medium' | 'medium'; // User prefers light/clean dinners
   photo?: RecipePhoto; // Optional photo stored locally on this device
   createdAt: number; // Timestamp
+  /** Last edit time (ms). Optional so older recipes stay valid; used to sync devices. */
+  updatedAt?: number;
   /**
    * Optional: marks this recipe as a reference-only item (a sauce/paste/dessert),
    * not a standalone dinner component. When set, the weekly meal generator

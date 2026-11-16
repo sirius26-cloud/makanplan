@@ -1,4 +1,5 @@
-import { ScrollView, Text, View, Pressable, Share, Platform, Alert } from 'react-native';
+import { ScrollView, Text, View, Pressable, Share, Platform } from 'react-native';
+import { notify } from '@/lib/dialog';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useRouter } from 'expo-router';
@@ -112,7 +113,7 @@ export default function GroceryListScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error('Failed to export to email:', error);
-      Alert.alert('Error', 'Could not open email app. Please try using Share instead.');
+      notify('Error', 'Could not open email app. Please try using Share instead.');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
@@ -126,7 +127,7 @@ export default function GroceryListScreen() {
       await Clipboard.setString(listText);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Copied', 'Grocery list copied to clipboard!');
+      notify('Copied', 'Grocery list copied to clipboard!');
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
     }

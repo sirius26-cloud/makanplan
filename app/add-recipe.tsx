@@ -2,7 +2,7 @@ import { ScrollView, Text, View, Pressable, TextInput, ActivityIndicator } from 
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Recipe, RecipeType, ProteinType } from '@/lib/types';
 import * as Haptics from 'expo-haptics';
 import { ParsedRecipe } from '@/lib/recipeImport';
@@ -11,7 +11,7 @@ import type { RecipePhoto } from '@/lib/types';
 
 const RECIPE_TYPES: RecipeType[] = ['protein_main', 'veg_side', 'rice_noodle_one_pot'];
 const PROTEIN_OPTIONS: ProteinType[] = ['chicken', 'fish', 'beef', 'seafood', 'tofu'];
-const CUISINES = ['Japanese', 'Thai', 'Cantonese', 'Vietnamese', 'Western', 'Mixed'] as const;
+const CUISINES = ['Japanese', 'Thai', 'Cantonese', 'Vietnamese', 'Western', 'Mixed', 'Taiwanese'] as const;
 const SPICE_LEVELS = ['light', 'light-medium', 'medium'] as const;
 const COURSE_OPTIONS: Array<{ value: 'dessert' | 'sauce' | undefined; label: string }> = [
   { value: undefined, label: 'Normal Dish' },
@@ -24,6 +24,7 @@ export default function AddRecipeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [isSaving, setIsSaving] = useState(false);
+  const saveLock = useRef(false); // stops a fast double-click saving the recipe twice
 
   // Form state
   const [name, setName] = useState('');
@@ -60,6 +61,9 @@ export default function AddRecipeScreen() {
         if (imported.spiceLevel) {
           setSpiceLevel(imported.spiceLevel as typeof SPICE_LEVELS[number]);
         }
+        if (typeof imported.hasVeg === 'boolean') setHasVeg(imported.hasVeg);
+        if (typeof imported.isRice === 'boolean') setIsRice(imported.isRice);
+        if (imported.courseType) setCourseType(imported.courseType);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } catch (error) {
         console.error('Failed to load imported recipe:', error);
@@ -68,12 +72,14 @@ export default function AddRecipeScreen() {
   }, [params.importedRecipe]);
 
   const handleSave = async () => {
+    if (saveLock.current) return;
     if (!name.trim()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     try {
+      saveLock.current = true;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setIsSaving(true);
 
@@ -107,6 +113,7 @@ export default function AddRecipeScreen() {
     } catch (error) {
       console.error('Failed to save recipe:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      saveLock.current = false;
     } finally {
       setIsSaving(false);
     }

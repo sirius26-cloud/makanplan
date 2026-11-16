@@ -1,4 +1,5 @@
-import { ScrollView, Text, View, Pressable, Alert } from 'react-native';
+import { ScrollView, Text, View, Pressable } from 'react-native';
+import { confirmAction } from '@/lib/dialog';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRecipes } from '@/lib/RecipeContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -40,29 +41,17 @@ export default function RecipeDetailScreen() {
     });
   };
 
-  const handleDelete = () => {
-    Alert.alert(
+  const handleDelete = async () => {
+    const ok = await confirmAction(
       'Delete Recipe',
       `Are you sure you want to delete "${recipe.name}"? This cannot be undone.`,
-      [
-        {
-          text: 'Cancel',
-          onPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          },
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          onPress: async () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            await deleteRecipe(recipe.id);
-            router.back();
-          },
-          style: 'destructive',
-        },
-      ],
+      'Delete',
+      true,
     );
+    if (!ok) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    await deleteRecipe(recipe.id);
+    router.back();
   };
 
   const handleBack = () => {

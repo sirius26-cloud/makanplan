@@ -5,7 +5,6 @@ import {
   Pressable,
   TextInput,
   ActivityIndicator,
-  Alert,
   Clipboard,
 } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
@@ -13,9 +12,14 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { parseRecipeText, parseRecipeFromUrl, formatParsedRecipe, ParsedRecipe } from '@/lib/recipeImport';
+import { useRecipes } from '@/lib/RecipeContext';
+import { notify } from '@/lib/dialog';
+import { isSyncConfigured, parseRecipeWithAI } from '@/lib/sync';
+import type { Recipe } from '@/lib/types';
 
 export default function ImportRecipeScreen() {
   const router = useRouter();
+  const { recipes, addRecipe } = useRecipes();
   const [activeTab, setActiveTab] = useState<'url' | 'text' | 'camera'>('url');
   const [urlInput, setUrlInput] = useState('');
   const [textInput, setTextInput] = useState('');
@@ -30,7 +34,7 @@ export default function ImportRecipeScreen() {
 
   const handleParseUrl = async () => {
     if (!urlInput.trim()) {
-      Alert.alert('Please enter a recipe URL');
+      notify('Please enter a recipe URL');
       return;
     }
 
@@ -51,29 +55,84 @@ export default function ImportRecipeScreen() {
     } catch (error) {
       console.error('Failed to parse URL:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Failed to parse recipe', 'Please check the URL and try again');
+      notify('Failed to parse recipe', 'Please check the URL and try again');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleParseText = () => {
+  const handleParseText = async () => {
     if (!textInput.trim()) {
-      Alert.alert('Please paste recipe text');
+      notify('Please paste recipe text');
       return;
     }
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsLoading(true);
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const parsed = parseRecipeText(textInput);
+      let parsed: ParsedRecipe;
+      let notes: string[] = [];
+      if (await isSyncConfigured()) {
+        try {
+          // Smart parse with Claude: fills in every field for you.
+          const ai = await parseRecipeWithAI(textInput);
+          parsed = ai;
+          notes = ai.reviewNotes;
+        } catch (aiError) {
+          console.error('AI parse failed, using basic parser:', aiError);
+          notify(
+            'Smart parsing unavailable',
+            'Using the basic parser instead, so please check the fields carefully.',
+          );
+          parsed = parseRecipeText(textInput);
+        }
+      } else {
+        parsed = parseRecipeText(textInput);
+      }
       setParsedRecipe(parsed);
-      setPreviewText(formatParsedRecipe(parsed));
+      setPreviewText(
+        formatParsedRecipe(parsed) +
+          (notes.length > 0 ? `\n\nPlease check:\n${notes.map((n) => `  • ${n}`).join('\n')}` : ''),
+      );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error('Failed to parse text:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Failed to parse recipe', 'Please check the format and try again');
+      notify('Failed to parse recipe', 'Please check the format and try again');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  // One-tap save: adds the parsed recipe straight to the library (you can still edit it later).
+  const handleSaveNow = async () => {
+    if (!parsedRecipe?.name) return;
+    const name = parsedRecipe.name.trim();
+    if (recipes.some((r) => r.name.trim().toLowerCase() === name.toLowerCase())) {
+      notify('Already in your recipes', `"${name}" already exists. Use "Review & Edit" to save it under a different name.`);
+      return;
+    }
+    const now = Date.now();
+    const recipe: Recipe = {
+      id: `custom_${now}`,
+      name,
+      type: parsedRecipe.type ?? 'protein_main',
+      protein: parsedRecipe.protein ?? 'chicken',
+      hasVeg: parsedRecipe.hasVeg ?? false,
+      isRice: parsedRecipe.isRice ?? false,
+      isFavourite: false,
+      isStaple: false,
+      ingredients: parsedRecipe.ingredients ?? [],
+      instructions: parsedRecipe.instructions ?? '',
+      servings: parsedRecipe.servings ?? 4,
+      cuisineType: (parsedRecipe.cuisineType as Recipe['cuisineType']) ?? 'Mixed',
+      spiceLevel: (parsedRecipe.spiceLevel as Recipe['spiceLevel']) ?? 'light',
+      createdAt: now,
+      courseType: parsedRecipe.courseType,
+    };
+    await addRecipe(recipe);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.replace('/(tabs)/recipes' as any);
   };
 
   const handlePasteFromClipboard = async () => {
@@ -195,7 +254,7 @@ export default function ImportRecipeScreen() {
               <View className="gap-2">
                 <Text className="text-lg font-bold text-foreground">Recipe Text</Text>
                 <Text className="text-sm text-muted">
-                  Paste handwritten recipe (from OCR) or recipe text
+                  Paste any recipe text. Claude will tidy it up and fill in every field (needs Cloud Sync set up in Settings).
                 </Text>
               </View>
 
@@ -251,7 +310,15 @@ export default function ImportRecipeScreen() {
                 ]}
                 className="mt-4 p-3 bg-primary rounded-lg items-center"
               >
-                <Text className="font-bold text-white text-base">✓ Use This Recipe</Text>
+                <Text className="font-bold text-white text-base">✓ Review & Edit</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleSaveNow}
+                style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}
+                className="p-3 bg-primary rounded-lg items-center"
+              >
+                <Text className="font-bold text-white text-base">⚡ Save to My Recipes Now</Text>
               </Pressable>
 
               <Pressable
