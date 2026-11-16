@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { USER_RECIPES } from './userRecipes';
 import {
   emptyMaster,
+  findTieConflictCopies,
   mergeMaster,
   sanitizeIncoming,
   stripLocalFields,
@@ -77,8 +79,14 @@ async function request(path: string, init: { method: 'GET' | 'POST'; body?: unkn
  * Merge this device's recipes with the master and return the result.
  * Local photos (stored only on this device) are always kept.
  */
-export async function syncRecipes(local: Recipe[]): Promise<Recipe[]> {
+export async function syncRecipes(localIn: Recipe[]): Promise<Recipe[]> {
   const tombstones = await loadTombstones();
+
+  // Look at the master first so differing old versions are kept, not overwritten.
+  const current = sanitizeIncoming(await request('/api/recipes', { method: 'GET' }));
+  const copies = findTieConflictCopies(localIn, current.recipes, USER_RECIPES);
+  const local = [...localIn, ...copies];
+
   const payload: MasterData = {
     version: 1,
     updatedAt: Date.now(),
@@ -87,8 +95,9 @@ export async function syncRecipes(local: Recipe[]): Promise<Recipe[]> {
   };
   const remote = sanitizeIncoming(await request('/api/recipes', { method: 'POST', body: payload }));
 
+  // Master first: on an exact tie the shared version wins, so all devices converge.
   const localMaster: MasterData = { ...emptyMaster(), recipes: local, deleted: tombstones };
-  const merged = mergeMaster(localMaster, remote);
+  const merged = mergeMaster(remote, localMaster);
 
   const localPhotos = new Map(local.filter((r) => r.photo).map((r) => [r.id, r.photo!]));
   const recipes = merged.recipes.map((r) =>

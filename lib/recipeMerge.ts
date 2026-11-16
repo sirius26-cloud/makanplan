@@ -87,3 +87,43 @@ export function sanitizeIncoming(input: any): MasterData {
     deleted,
   };
 }
+
+/** The parts of a recipe that count as "content" when checking for conflicting versions. */
+export function contentKey(r: Recipe): string {
+  return JSON.stringify([
+    r.name, r.type, r.protein, r.hasVeg, r.isRice, r.ingredients, r.instructions,
+    r.servings, r.cuisineType, r.spiceLevel, r.courseType ?? null,
+  ]);
+}
+
+/**
+ * Two devices can hold different versions of the same recipe that both predate
+ * edit-tracking (same timestamp, different content). Nothing is thrown away:
+ * the master version keeps the original id, and this device's version is kept
+ * as a separate copy. A recipe identical to the built-in starter version is not
+ * a real edit, so no copy is made for it.
+ */
+export function findTieConflictCopies(
+  local: Recipe[],
+  remote: Recipe[],
+  seeds: Recipe[],
+  now: number = Date.now(),
+): Recipe[] {
+  const remoteById = new Map(remote.map((r) => [r.id, r]));
+  const seedKeyById = new Map(seeds.map((r) => [r.id, contentKey(r)]));
+  const copies: Recipe[] = [];
+  for (const r of local) {
+    const m = remoteById.get(r.id);
+    if (!m || recipeStamp(m) !== recipeStamp(r)) continue;
+    const key = contentKey(r);
+    if (key === contentKey(m) || key === seedKeyById.get(r.id)) continue;
+    copies.push({
+      ...r,
+      id: `${r.id}_copy_${now}`,
+      name: `${r.name} (other device version)`,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+  return copies;
+}
