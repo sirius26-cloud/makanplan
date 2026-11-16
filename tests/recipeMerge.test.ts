@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyMaster, findTieConflictCopies, mergeMaster, sanitizeIncoming, stripLocalFields } from '../lib/recipeMerge';
+import { emptyMaster, findPreservedLocalVersions, mergeMaster, sanitizeIncoming, stripLocalFields } from '../lib/recipeMerge';
 import type { Recipe } from '../lib/types';
 
 const base = (id: string, extra: Partial<Recipe> = {}): Recipe => ({
@@ -43,19 +43,21 @@ describe('sanitizeIncoming / stripLocalFields', () => {
   });
 });
 
-describe('findTieConflictCopies', () => {
-  it('keeps the other device version as a copy instead of overwriting it', () => {
-    const copies = findTieConflictCopies([base('a', { name: 'Mine', instructions: 'x' })], [base('a', { name: 'Theirs' })], [], 5);
+describe('findPreservedLocalVersions', () => {
+  it('keeps an unedited-tracking local version that differs from the shared one as a copy', () => {
+    const copies = findPreservedLocalVersions([base('a', { name: 'Mine', instructions: 'x' })], [base('a', { name: 'Theirs', updatedAt: 9 })], [], 5);
     expect(copies).toHaveLength(1);
     expect(copies[0].name).toBe('Mine (other device version)');
     expect(copies[0].id).toBe('a_copy_5');
   });
-  it('makes no copy when versions match, differ only by favourite, or equal the starter recipe', () => {
-    expect(findTieConflictCopies([base('a')], [base('a')], [])).toHaveLength(0);
-    expect(findTieConflictCopies([base('a', { isFavourite: true })], [base('a')], [])).toHaveLength(0);
-    expect(findTieConflictCopies([base('a', { name: 'Seed' })], [base('a', { name: 'Edited' })], [base('a', { name: 'Seed' })])).toHaveLength(0);
+  it('makes no copy when versions match, differ only by favourite, or equal a known starter recipe', () => {
+    expect(findPreservedLocalVersions([base('a')], [base('a')], [])).toHaveLength(0);
+    expect(findPreservedLocalVersions([base('a', { isFavourite: true })], [base('a')], [])).toHaveLength(0);
+    const seeds = [base('a', { name: 'Seed' }), base('a', { name: 'Older seed' })];
+    expect(findPreservedLocalVersions([base('a', { name: 'Older seed' })], [base('a', { name: 'Edited', updatedAt: 9 })], seeds)).toHaveLength(0);
   });
-  it('makes no copy when one side is clearly newer', () => {
-    expect(findTieConflictCopies([base('a', { name: 'x' })], [base('a', { updatedAt: 9 })], [])).toHaveLength(0);
+  it('ignores recipes already edited since tracking began, and recipes the shared library does not have', () => {
+    expect(findPreservedLocalVersions([base('a', { name: 'x', updatedAt: 3 })], [base('a', { updatedAt: 9 })], [])).toHaveLength(0);
+    expect(findPreservedLocalVersions([base('zzz')], [base('a')], [])).toHaveLength(0);
   });
 });

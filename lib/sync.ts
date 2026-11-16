@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { LEGACY_SEED_RECIPES } from './legacySeedRecipes';
 import { USER_RECIPES } from './userRecipes';
 import {
   emptyMaster,
-  findTieConflictCopies,
+  findPreservedLocalVersions,
   mergeMaster,
   sanitizeIncoming,
   stripLocalFields,
@@ -84,8 +85,20 @@ export async function syncRecipes(localIn: Recipe[]): Promise<Recipe[]> {
 
   // Look at the master first so differing old versions are kept, not overwritten.
   const current = sanitizeIncoming(await request('/api/recipes', { method: 'GET' }));
-  const copies = findTieConflictCopies(localIn, current.recipes, USER_RECIPES);
-  const local = [...localIn, ...copies];
+  const masterIsEmpty = current.recipes.length === 0;
+  const copies = findPreservedLocalVersions(
+    localIn,
+    masterIsEmpty ? USER_RECIPES : current.recipes,
+    [...USER_RECIPES, ...LEGACY_SEED_RECIPES],
+  );
+  let local = [...localIn, ...copies];
+  if (masterIsEmpty) {
+    // First ever sync: the standard 63-recipe baseline becomes the master.
+    // Baseline wins over older unedited copies; newer edits and recipes that
+    // exist only on this device are kept.
+    const baseline: MasterData = { ...emptyMaster(), recipes: USER_RECIPES };
+    local = mergeMaster({ ...emptyMaster(), recipes: local, deleted: tombstones }, baseline).recipes;
+  }
 
   const payload: MasterData = {
     version: 1,

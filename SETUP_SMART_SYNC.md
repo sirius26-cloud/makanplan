@@ -9,6 +9,15 @@ What this adds
 Existing recipes are never removed by syncing. A recipe is only deleted if you delete it in the app.
 Recipe photos stay on the device they were added on (they are not synced).
 
+## Standard baseline (63 recipes)
+The built-in starting library is now your master backup from 2026-10-08 (63 recipes, `lib/baselineRecipes.json`).
+- New devices start with these 63.
+- On the first ever sync, the baseline becomes the master. It replaces older never-edited copies on a device.
+- Anything edited AFTER you install this update, and recipes that exist only on one device, are kept.
+- If a device has its own older edit that differs from the baseline, that version is kept as "<name> (other device version)".
+- BEFORE the first sync on each device: Settings -> Export All Recipes as JSON (a safety copy).
+- To change the baseline later, replace `lib/baselineRecipes.json` with a newer export.
+
 ## Vercel setup (do this on the preview first)
 1. Vercel -> project `makanplan` -> Storage tab -> Create -> Blob.
    Choose **Private** access. Connect it to the project. Tick **Preview** first (add Production when you launch).
@@ -28,4 +37,4 @@ Recipe photos stay on the device they were added on (they are not synced).
 ## Notes
 - If smart parsing is unavailable the app falls back to the old basic parser.
 - Parsing costs a fraction of a cent per recipe.
-- `tests/master-recipes.test.ts` already failed before this change (it expects 44 seed recipes; the app now has 59).
+- The old built-in 59 recipes are kept in `lib/legacySeedRecipes.ts` only so syncing can tell an untouched old copy from a real edit.

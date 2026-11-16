@@ -97,26 +97,31 @@ export function contentKey(r: Recipe): string {
 }
 
 /**
- * Two devices can hold different versions of the same recipe that both predate
- * edit-tracking (same timestamp, different content). Nothing is thrown away:
- * the master version keeps the original id, and this device's version is kept
- * as a separate copy. A recipe identical to the built-in starter version is not
- * a real edit, so no copy is made for it.
+ * A device can hold a recipe version that predates edit-tracking (no updatedAt)
+ * and differs from the shared one. Nothing is thrown away: the shared version
+ * keeps the original id, and this device's version is kept as a separate copy.
+ * A version identical to a known starter recipe is not a real edit, so no copy
+ * is made for it.
  */
-export function findTieConflictCopies(
+export function findPreservedLocalVersions(
   local: Recipe[],
-  remote: Recipe[],
-  seeds: Recipe[],
+  reference: Recipe[],
+  knownSeeds: Recipe[],
   now: number = Date.now(),
 ): Recipe[] {
-  const remoteById = new Map(remote.map((r) => [r.id, r]));
-  const seedKeyById = new Map(seeds.map((r) => [r.id, contentKey(r)]));
+  const referenceById = new Map(reference.map((r) => [r.id, r]));
+  const seedKeys = new Map<string, Set<string>>();
+  for (const s of knownSeeds) {
+    if (!seedKeys.has(s.id)) seedKeys.set(s.id, new Set());
+    seedKeys.get(s.id)!.add(contentKey(s));
+  }
   const copies: Recipe[] = [];
   for (const r of local) {
-    const m = remoteById.get(r.id);
-    if (!m || recipeStamp(m) !== recipeStamp(r)) continue;
+    if (r.updatedAt !== undefined) continue; // edited since tracking began: normal newest-wins
+    const m = referenceById.get(r.id);
+    if (!m) continue;
     const key = contentKey(r);
-    if (key === contentKey(m) || key === seedKeyById.get(r.id)) continue;
+    if (key === contentKey(m) || seedKeys.get(r.id)?.has(key)) continue;
     copies.push({
       ...r,
       id: `${r.id}_copy_${now}`,
